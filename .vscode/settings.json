@@ -1,0 +1,6 @@
+{
+  "sonarlint.connectedMode.project": {
+    "connectionId": "shuttlemate-cism",
+    "projectKey": "ShuttleMate-CISM_app"
+  }
+}

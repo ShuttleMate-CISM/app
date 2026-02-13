@@ -2,6 +2,13 @@ import express from "express";
 import mongoose from "mongoose";
 import Shop from "../models/shop.js";
 import { getRegisteredTokens } from "./notificationController.js";
+import Joi from 'joi';
+import sanitize from 'mongo-sanitize';
+
+// Define strict schema for search
+const searchSchema = Joi.object({
+  query: Joi.string().alphanum().min(1).max(30).required()
+});
 
 // Create a new shop
 export const createShop = async (req, res, next) => {
@@ -185,6 +192,29 @@ export const removeItemFromShop = async (req, res, next) => {
     console.error("Error removing item:", error);
     res.status(500).json({ success: false, message: "Failed to remove item" });
     next(error);
+  }
+};
+
+// Search items with NoSQL injection protection
+export const searchItems = async (req, res) => {
+  try {
+    // 1. Sanitize Input (Remove $ signs)
+    const cleanQuery = sanitize(req.query.q);
+
+    // 2. Validate Type (Must be string)
+    const { error } = searchSchema.validate({ query: cleanQuery });
+    if (error) {
+      return res.status(400).json({ message: "Invalid search term" });
+    }
+
+    // 3. Safe Execution
+    const items = await Shop.find({ 
+      name: { $regex: cleanQuery, $options: 'i' } 
+    });
+    
+    res.status(200).json(items);
+  } catch (error) {
+    res.status(500).json({ message: "Search failed" });
   }
 };
 

@@ -8,6 +8,7 @@ import {
   addCategoryToShop,
   addItemToCategory,
   removeItemFromShop,
+  searchItems,
   
 } from "../controllers/shopController.js";
 
@@ -17,6 +18,7 @@ const router = express.Router();
 // Shop routes
 router.post("/", createShop);
 router.get("/", getAllShops);
+router.get("/search", searchItems); // Search route (must be before /:id routes)
 router.get("/shop/:id", getShopById);
 router.put("/shop/:id", updateShop);
 router.delete("/shop/:id", deleteShop);

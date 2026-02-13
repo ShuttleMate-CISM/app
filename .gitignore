@@ -1,0 +1,235 @@
+# ===================================
+# Dependencies
+# ===================================
+node_modules/
+jspm_packages/
+bower_components/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ===================================
+# Environment Variables & Secrets
+# ===================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Firebase credentials
+shuttlemate-*.json
+*-firebase-adminsdk-*.json
+firebase-adminsdk*.json
+firebaseServiceAccountKey.json
+
+# API keys and secrets
+secrets.json
+.secrets
+*.pem
+*.key
+*.cert
+*.crt
+
+# ===================================
+# Build Outputs
+# ===================================
+dist/
+dist-ssr/
+build/
+.next/
+out/
+.nuxt/
+.cache/
+.parcel-cache/
+.output/
+.vite/
+.temp/
+.tmp/
+
+# ===================================
+# IDE & Editor Files
+# ===================================
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ===================================
+# Operating System Files
+# ===================================
+# macOS
+.DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===================================
+# Testing & Coverage
+# ===================================
+coverage/
+*.lcov
+.nyc_output/
+lib-cov/
+.grunt/
+.lock-wscript
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+.hypothesis/
+.pytest_cache/
+nosetests.xml
+test-results/
+*.test.js.snap
+
+# ===================================
+# Logs
+# ===================================
+*.log
+logs/
+*.log.*
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ===================================
+# Runtime & Temporary Files
+# ===================================
+.npm
+.eslintcache
+.node_repl_history
+.yarn-integrity
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# ===================================
+# Database
+# ===================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# ===================================
+# Package Manager Lock Files
+# ===================================
+# Uncomment the ones you want to ignore
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ===================================
+# TypeScript
+# ===================================
+*.tsbuildinfo
+next-env.d.ts
+
+# ===================================
+# Optional: npm
+# ===================================
+.npm
+.npmrc
+
+# ===================================
+# Optional: Expo (React Native)
+# ===================================
+.expo/
+.expo-shared/
+
+# ===================================
+# Optional: Serverless
+# ===================================
+.serverless/
+.dynamodb/
+
+# ===================================
+# Optional: Docker
+# ===================================
+# Uncomment if not tracking docker files
+# docker-compose.override.yml
+# .dockerignore
+
+# ===================================
+# Miscellaneous
+# ===================================
+.vercel
+.turbo
+*.tgz
+*.gz
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+audit.json

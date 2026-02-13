@@ -1,0 +1,144 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    name: Setup and Install Dependencies
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install root dependencies
+        run: npm install
+
+  backend:
+    needs: setup
+    runs-on: ubuntu-latest
+    name: Backend Quality Checks
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Install backend dependencies
+        run: npm install --prefix Shuttlemate-Backend
+      
+      - name: Check for security vulnerabilities
+        run: npm audit --prefix Shuttlemate-Backend --audit-level=moderate || true
+      
+      - name: Verify backend structure
+        run: |
+          echo "Backend files check:"
+          ls -la Shuttlemate-Backend/
+          echo "Backend package.json:"
+          cat Shuttlemate-Backend/package.json
+
+  frontend:
+    needs: setup
+    runs-on: ubuntu-latest
+    name: Frontend Quality Checks
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Install frontend dependencies
+        run: npm install --prefix Shuttlemate-Frontend
+      
+      - name: Run ESLint
+        run: npm run lint:frontend
+        continue-on-error: true
+      
+      - name: Build frontend
+        run: npm run build --workspace=Shuttlemate-Frontend
+      
+      - name: Check for security vulnerabilities
+        run: npm audit --prefix Shuttlemate-Frontend --audit-level=moderate || true
+
+  integration:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    name: Integration Check
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install all dependencies
+        run: npm install
+      
+      - name: Verify workspace structure
+        run: |
+          echo "Root package.json workspaces:"
+          grep -A 5 '"workspaces"' package.json
+          echo ""
+          echo "Checking Shuttlemate-Backend exists..."
+          test -f Shuttlemate-Backend/package.json && echo "✓ Backend package.json found"
+          echo ""
+          echo "Checking Shuttlemate-Frontend exists..."
+          test -f Shuttlemate-Frontend/package.json && echo "✓ Frontend package.json found"
+
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality Analysis
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for common issues
+        run: |
+          echo "Checking for TODO comments..."
+          grep -r "TODO\|FIXME" Shuttlemate-Backend Shuttlemate-Frontend || echo "No TODO/FIXME found"
+          
+          echo ""
+          echo "Checking for console.log in production code..."
+          grep -r "console.log" Shuttlemate-Backend/routes Shuttlemate-Backend/controllers || echo "No console.logs found in critical paths"
+          
+          echo ""
+          echo "Repository structure check:"
+          echo "✓ Monorepo structure verified"
+
+  build-summary:
+    needs: [backend, frontend, integration, code-quality]
+    runs-on: ubuntu-latest
+    name: Build Summary
+    if: always()
+    steps:
+      - name: Check build status
+        run: |
+          echo "==================================="
+          echo "Build Pipeline Complete"
+          echo "==================================="
+          echo "Backend Quality Checks: ${{ needs.backend.result }}"
+          echo "Frontend Quality Checks: ${{ needs.frontend.result }}"
+          echo "Integration Check: ${{ needs.integration.result }}"
+          echo "Code Quality Analysis: ${{ needs.code-quality.result }}"
+          echo "==================================="

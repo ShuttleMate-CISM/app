@@ -1,0 +1,35 @@
+{
+  "name": "shuttlemate",
+  "version": "1.0.0",
+  "description": "Shuttlemate - A comprehensive badminton booking and coaching platform",
+  "private": true,
+  "workspaces": [
+    "Shuttlemate-Backend",
+    "Shuttlemate-Frontend"
+  ],
+  "scripts": {
+    "install": "npm install && npm install --prefix Shuttlemate-Backend && npm install --prefix Shuttlemate-Frontend",
+    "dev": "npm run dev --workspace=Shuttlemate-Frontend & npm run dev --workspace=Shuttlemate-Backend",
+    "build": "npm run build --workspace=Shuttlemate-Frontend",
+    "start": "npm run start --workspace=Shuttlemate-Backend",
+    "start:backend": "npm --prefix Shuttlemate-Backend start",
+    "start:frontend": "npm --prefix Shuttlemate-Frontend dev",
+    "dev:backend": "npm --prefix Shuttlemate-Backend run dev",
+    "dev:frontend": "npm --prefix Shuttlemate-Frontend run dev",
+    "lint:frontend": "npm --prefix Shuttlemate-Frontend run lint",
+    "preview:frontend": "npm --prefix Shuttlemate-Frontend run preview"
+  },
+  "keywords": [
+    "badminton",
+    "booking",
+    "coaching",
+    "sports",
+    "mern"
+  ],
+  "author": "Shuttlemate Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}

@@ -88,6 +88,17 @@ export const getBooking = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
     
+    // --- SECURITY FIX STARTS HERE ---
+    // Check if the requester is the owner OR an admin
+    // Assuming req.user is set by your authMiddleware
+    if (req.user && booking.userId && booking.userId._id.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Security Alert: You are not authorized to view this booking." 
+      });
+    }
+    // --- SECURITY FIX ENDS HERE ---
+    
     res.status(200).json({
       success: true,
       data: booking,

@@ -8,7 +8,7 @@ import './App.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Router> {/* Wrapping App with Router */}
+    <Router> {/* Wrapping App with Router*/}
       <App />
     </Router>
   </StrictMode>,

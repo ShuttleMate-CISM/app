@@ -19,8 +19,10 @@ import userRoutes from './routes/userRoutes.js'
 import notificationRoutes from './routes/Notification.js';
 import paymentRoutes from './routes/payment.js';
 import NewsRoute from './routes/news.js';
+import Stripe from 'stripe';
 
-
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Express App
 const app = express();
@@ -28,6 +30,30 @@ const port = process.env.PORT || 5000;
 
 // Middlewares
 app.use(cors());
+
+// STRIPE WEBHOOK ROUTE (Must be before express.json() for raw body parsing)
+app.post('/api/payment/webhook', express.raw({type: 'application/json'}), (request, response) => {
+  const sig = request.headers['stripe-signature'];
+  let event;
+
+  try {
+    // SECURITY CHECK: Verify the signature
+    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+  } catch (err) {
+    console.error(`Webhook Signature Verification Failed: ${err.message}`);
+    return response.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the event
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object;
+    console.log('Payment captured verified:', paymentIntent.id);
+    // TODO: Update your Booking Status in Database here
+  }
+
+  response.send();
+});
+
 app.use(express.json());
 
 // Routes

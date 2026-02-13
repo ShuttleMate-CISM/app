@@ -8,7 +8,7 @@
     "Shuttlemate-Frontend"
   ],
   "scripts": {
-    "install": "npm install && npm install --prefix Shuttlemate-Backend && npm install --prefix Shuttlemate-Frontend",
+    "setup": "npm install --prefix Shuttlemate-Backend && npm install --prefix Shuttlemate-Frontend",
     "dev": "npm run dev --workspace=Shuttlemate-Frontend & npm run dev --workspace=Shuttlemate-Backend",
     "build": "npm run build --workspace=Shuttlemate-Frontend",
     "start": "npm run start --workspace=Shuttlemate-Backend",

@@ -60,7 +60,7 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
   const fetchMatches = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5000/api/matches/');
+      const response = await fetch('http://localhost:5001/api/matches/');
       if (response.ok) {
         const data = await response.json();
         // Ensure data is an array before setting it

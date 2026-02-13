@@ -15,7 +15,7 @@ const VideoPage = () => {
     // Fetch videos from the backend
     const fetchVideos = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/videos');
+            const response = await axios.get('http://localhost:5001/api/videos');
             console.log(response);
             setVideos(response.data.videos);
         } catch (error) {
@@ -65,7 +65,7 @@ const VideoPage = () => {
             });
 
             if (result.isConfirmed) {
-                await axios.delete(`http://localhost:5000/api/videos/${id}`);
+                await axios.delete(`http://localhost:5001/api/videos/${id}`);
                 setVideos((prevVideos) => prevVideos.filter(video => video._id !== id)); // Update state
                 Swal.fire({
                     title: "Deleted!",

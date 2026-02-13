@@ -45,7 +45,7 @@ const AvailableTime = ({ isOpen, courtId, courtName, onClose }) => {
     const fetchAvailability = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:5000/api/courts/${courtId}/availability`);
+            const response = await fetch(`http://localhost:5001/api/courts/${courtId}/availability`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.success && Array.isArray(data.data)) {
@@ -63,7 +63,7 @@ const AvailableTime = ({ isOpen, courtId, courtName, onClose }) => {
     try {
         setBookingsLoading(true);
         setError('');
-        const response = await fetch(`http://localhost:5000/api/courts/${courtId}/bookings`);
+        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/bookings`);
         if (response.ok) {
             const data = await response.json();
             if (data.success && Array.isArray(data.data)) {
@@ -86,7 +86,7 @@ const fetchBooking = async () => {
     try{
         setBookingsLoading(true);
         setError('');
-        const response = await fetch(`http://localhost:5000/api/courts/${courtId}/bookings`);
+        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/bookings`);
         if(response.ok){
             const data = await response.json();
             if(data.success && Array.isArray(data.data)){
@@ -105,7 +105,7 @@ const fetchBooking = async () => {
 const updateBookingStatus = async (bookingId, status) => {
     try{
         setError('');
-        const response = await fetch(`http://localhost:5000/api/courts/${courtId}/bookings/${bookingId}/status`, {
+        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/bookings/${bookingId}/status`, {
             method: 'PATCH',
             headers:{
                 'Content-Type' : 'application/json'
@@ -136,7 +136,7 @@ const addAvailabilitySlot = async () => {
             return;
         }
 
-        const response = await fetch(`http://localhost:5000/api/courts/${courtId}/availability`,{
+        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/availability`,{
             method: 'POST',
             headers:{
                 'Content-Type': 'application/json',
@@ -182,7 +182,7 @@ const deleteAvailabilitySlot = async (slotId) => {
 
     try {
         setError('');
-        const response = await fetch(`http://localhost:5000/api/courts/${courtId}/availability/${slotId}`, {
+        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/availability/${slotId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -239,7 +239,7 @@ const saveEdit = async () => {
             return;
         }
 
-        const response = await fetch(`http://localhost:5000/api/courts/${courtId}/availability/${editingSlot._id}`, {
+        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/availability/${editingSlot._id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

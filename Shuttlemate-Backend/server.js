@@ -20,6 +20,7 @@ import notificationRoutes from './routes/Notification.js';
 import paymentRoutes from './routes/payment.js';
 import NewsRoute from './routes/news.js';
 import Stripe from 'stripe';
+import helmet from 'helmet';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -29,6 +30,11 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // Middlewares
+// SECURITY HEADERS (Place this at the top of middleware)
+app.use(helmet()); 
+app.use(helmet.hidePoweredBy()); // Explicitly hide X-Powered-By
+app.use(helmet.frameguard({ action: 'deny' })); // Prevent Clickjacking
+
 app.use(cors());
 
 // STRIPE WEBHOOK ROUTE (Must be before express.json() for raw body parsing)

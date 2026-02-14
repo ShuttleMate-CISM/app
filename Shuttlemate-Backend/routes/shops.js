@@ -8,13 +8,14 @@ import {
   addCategoryToShop,
   addItemToCategory,
   removeItemFromShop,
-  
+  searchItems,
 } from "../controllers/shopController.js";
 
 const router = express.Router();
 
 //http://localhost:5000/api/shops/
 // Shop routes
+router.get("/search", searchItems); // Search with NoSQL injection prevention
 router.post("/", createShop);
 router.get("/", getAllShops);
 router.get("/shop/:id", getShopById);

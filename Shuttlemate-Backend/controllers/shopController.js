@@ -1,7 +1,14 @@
 import express from "express";
 import mongoose from "mongoose";
+import Joi from "joi";
+import sanitize from "mongo-sanitize";
 import Shop from "../models/shop.js";
 import { getRegisteredTokens } from "./notificationController.js";
+
+// Define strict validation schema for search input
+const searchSchema = Joi.object({
+  query: Joi.string().min(1).max(30).required(),
+});
 
 // Create a new shop
 export const createShop = async (req, res, next) => {
@@ -189,5 +196,43 @@ export const removeItemFromShop = async (req, res, next) => {
 };
 
 
+// Search items with NoSQL injection prevention
+export const searchItems = async (req, res) => {
+  try {
+    // 1. Sanitize Input (Remove $ signs and malicious operators)
+    const cleanQuery = sanitize(req.query.q);
 
+    // 2. Validate Type (Must be a valid string)
+    const { error } = searchSchema.validate({ query: cleanQuery });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid search term",
+      });
+    }
+
+    // 3. Safe Execution - use sanitized input
+    const shops = await Shop.find({
+      $or: [
+        { name: { $regex: cleanQuery, $options: "i" } },
+        { "items.name": { $regex: cleanQuery, $options: "i" } },
+      ],
+    });
+
+    // Extract matching items from shops
+    const items = [];
+    shops.forEach((shop) => {
+      shop.items.forEach((item) => {
+        if (item.name && item.name.match(new RegExp(cleanQuery, "i"))) {
+          items.push({ ...item.toObject(), shopName: shop.name, shopId: shop._id });
+        }
+      });
+    });
+
+    res.status(200).json({ success: true, items, shops });
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({ success: false, message: "Search failed" });
+  }
+};
 

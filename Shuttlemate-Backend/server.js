@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import cors from "cors";
+import helmet from "helmet";
 import { connectDB } from "./config/db.js";
 import videoRoutes from "./routes/video.js";
 import CoachRoutes from "./routes/Coachers.js";
@@ -34,6 +35,10 @@ const corsOptions = {
 };
 
 // Middlewares
+// SECURITY HEADERS (Helmet - Infrastructure Security)
+app.use(helmet()); // Sets various HTTP security headers
+app.use(helmet.hidePoweredBy()); // Explicitly hide X-Powered-By header
+app.use(helmet.frameguard({ action: "deny" })); // Prevent Clickjacking
 app.use(cors(corsOptions));
 app.use(express.json());
 

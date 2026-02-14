@@ -97,7 +97,7 @@ const videoModel = ({ isOpen, onClose, onSuccess }) => {
             const creatorPhotoURL = await uploadFile(formData.videoCreatorPhoto, 'creatorPhotos', 'creatorPhoto');
             
             // Send POST request to the backend
-            const response = await axios.post(`http://localhost:5000/api/videos/`, {
+            const response = await axios.post(`http://localhost:5001/api/videos/`, {
                 videoUrl: videoURL,
                 imgUrl: thumbnailURL,
                 videoName: formData.videoName,

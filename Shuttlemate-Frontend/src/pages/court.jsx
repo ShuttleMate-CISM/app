@@ -29,7 +29,7 @@ const Courts = () => {
     // Fetch all courts from API
     const fetchCourts = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/courts');
+            const response = await axios.get('http://localhost:5001/api/courts');
             console.error("Data:", response);
 
             setCourts(response.data.courts);
@@ -44,7 +44,7 @@ const Courts = () => {
     };
     const fetchCoacherById = async (id) => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/courts/${id}`);
+            const response = await axios.get(`http://localhost:5001/api/courts/${id}`);
             
             setFormData(response.data.court);
             setStep(2);
@@ -139,7 +139,7 @@ const Courts = () => {
                         const updatedCourt = { ...formData, CourtPhoto: downloadURL };
 
                         if (editingCourtId) {
-                            axios.put(`http://localhost:5000/api/courts/court/${editingCourtId}`, updatedCourt)
+                            axios.put(`http://localhost:5001/api/courts/court/${editingCourtId}`, updatedCourt)
                                 .then(() => {
                                     fetchCourts();
                                     toggleModal();
@@ -156,7 +156,7 @@ const Courts = () => {
                                     setUploading(false);
                                 });
                         } else {
-                            axios.post('http://localhost:5000/api/courts', updatedCourt)
+                            axios.post('http://localhost:5001/api/courts', updatedCourt)
                                 .then(() => {
                                     fetchCourts();
                                     toggleModal();
@@ -203,7 +203,7 @@ const Courts = () => {
             });
 
             if (result.isConfirmed) {
-                await axios.delete(`http://localhost:5000/api/courts/${id}`);
+                await axios.delete(`http://localhost:5001/api/courts/${id}`);
                 setCourts(courts.filter(court => court._id !== id));
 
                 Swal.fire({
@@ -223,7 +223,7 @@ const Courts = () => {
     };
     
     const handleUpdateCourt = (updatedCourt) => {
-        axios.put(`http://localhost:5000/api/courts/court/${updatedCourt._id}`, updatedCourt)
+        axios.put(`http://localhost:5001/api/courts/court/${updatedCourt._id}`, updatedCourt)
           .then((response) => {
             fetchCourts();
             Swal.fire({

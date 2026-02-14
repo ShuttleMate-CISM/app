@@ -42,7 +42,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
   const fetchAvailability = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/Coachers/${coachId}/availability`);
+      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/availability`);
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.data)) {
@@ -60,7 +60,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
     try {
       setBookingsLoading(true);
       setError('');
-      const response = await fetch(`http://localhost:5000/api/Coachers/${coachId}/bookings`);
+      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/bookings`);
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.data)) {
@@ -79,7 +79,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
   const updateBookingStatus = async (bookingId, status) => {
     try {
       setError('');
-      const response = await fetch(`http://localhost:5000/api/Coachers/${coachId}/bookings/${bookingId}/status`, {
+      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/bookings/${bookingId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/Coachers/${coachId}/availability`, {
+      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/availability`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
   const deleteAvailabilitySlot = async (slotId) => {
     try {
       setError('');
-      const response = await fetch(`http://localhost:5000/api/Coachers/${coachId}/availability/${slotId}`, {
+      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/availability/${slotId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -173,7 +173,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/Coachers/${coachId}/availability/${editingSlot._id}`, {
+      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/availability/${editingSlot._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

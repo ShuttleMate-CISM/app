@@ -33,7 +33,7 @@ const Payments = () => {
                         
                         if (payment.userId) {
                             try {
-                                const userResponse = await fetch(`http://localhost:5000/api/users/${payment.userId}`);
+                                const userResponse = await fetch(`http://localhost:5001/api/users/${payment.userId}`);
                                 if (userResponse.ok) {
                                     const userData = await userResponse.json();
                                     userName = userData.name || userData.displayName || 'Unknown User';
@@ -52,7 +52,7 @@ const Payments = () => {
 
                         if (payment.itemId) {
                             try {
-                                const itemResponse = await fetch(`http://localhost:5000/api/shops/item/${payment.itemId}`);
+                                const itemResponse = await fetch(`http://localhost:5001/api/shops/item/${payment.itemId}`);
                                 if (itemResponse.ok) {
                                     const itemData = await itemResponse.json();
                                     itemName = itemData.name || 'Unknown Item';
@@ -119,9 +119,9 @@ const Payments = () => {
                 queryParams.append('status', status);
             }
             
-            console.log('Fetching payments with URL:', `http://localhost:5000/api/payment/payments?${queryParams}`);
+            console.log('Fetching payments with URL:', `http://localhost:5001/api/payment/payments?${queryParams}`);
             
-            const response = await fetch(`http://localhost:5000/api/payment/payments?${queryParams}`);
+            const response = await fetch(`http://localhost:5001/api/payment/payments?${queryParams}`);
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch payments: ${response.status} ${response.statusText}`);
@@ -165,7 +165,7 @@ const Payments = () => {
             
             // Try the dedicated stats endpoint first
             try {
-                const statsResponse = await fetch('http://localhost:5000/api/payment/payments/stats');
+                const statsResponse = await fetch('http://localhost:5001/api/payment/payments/stats');
                 if (statsResponse.ok) {
                     const statsData = await statsResponse.json();
                     console.log('Stats API Response:', statsData);
@@ -197,7 +197,7 @@ const Payments = () => {
             }
             
             // Fallback: calculate from payments list
-            const response = await fetch('http://localhost:5000/api/payment/payments?limit=1000');
+            const response = await fetch('http://localhost:5001/api/payment/payments?limit=1000');
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch payment stats: ${response.status}`);
@@ -252,7 +252,7 @@ const Payments = () => {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/payment/payment/${paymentId}`, {
+            const response = await fetch(`http://localhost:5001/api/payment/payment/${paymentId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -292,7 +292,7 @@ const Payments = () => {
     const handleUpdatePaymentStatus = async (paymentId, newStatus) => {
         try {
             // Fixed endpoint to match your backend route
-            const response = await fetch(`http://localhost:5000/api/payment/payment/${paymentId}/status`, {
+            const response = await fetch(`http://localhost:5001/api/payment/payment/${paymentId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

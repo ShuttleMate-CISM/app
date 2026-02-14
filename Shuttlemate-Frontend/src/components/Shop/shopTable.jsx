@@ -19,7 +19,7 @@ const ShopDataTable = ({ shops = [], onDelete, onAddItem, onEdit }) => {
         if (categoryItems[categoryId]) return; // Avoid fetching again if data already exists
 
         try {
-            const response = await fetch(`http://localhost:5000/api/items/category/${categoryId}`);
+            const response = await fetch(`http://localhost:5001/api/items/category/${categoryId}`);
             const data = await response.json();
             setCategoryItems((prev) => ({
                 ...prev,

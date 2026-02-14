@@ -23,7 +23,7 @@ const CoachModal = ({
       setLoading(true);
       setError(null);
       
-      axios.get('http://localhost:5000/api/courts/')
+      axios.get('http://localhost:5001/api/courts/')
         .then(response => {
        
           setLoading(false);

@@ -136,7 +136,7 @@ const EditVideoModal = ({ isOpen, onClose, onSuccess, videoData }) => {
             }
 
             // Send PUT request to update the video
-            const response = await axios.put(`http://localhost:5000/api/videos/video/${videoData._id}`, {
+            const response = await axios.put(`http://localhost:5001/api/videos/video/${videoData._id}`, {
                 videoUrl: videoURL,
                 imgUrl: thumbnailURL,
                 videoName: formData.videoName,

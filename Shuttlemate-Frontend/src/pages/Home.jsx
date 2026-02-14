@@ -22,13 +22,13 @@ const Home = () => {
       setApiData(prev => ({ ...prev, loading: true, error: null }));
 
       const endpoints = {
-        users: 'http://localhost:5000/api/user',
-        coaches: 'http://localhost:5000/api/Coachers', 
-        courts: 'http://localhost:5000/api/courts',
-        videos: 'http://localhost:5000/api/videos',
-        shops: 'http://localhost:5000/api/shops',
-        matches: 'http://localhost:5000/api/matches',
-        items: 'http://localhost:5000/api/items'
+        users: 'http://localhost:5001/api/user',
+        coaches: 'http://localhost:5001/api/Coachers', 
+        courts: 'http://localhost:5001/api/courts',
+        videos: 'http://localhost:5001/api/videos',
+        shops: 'http://localhost:5001/api/shops',
+        matches: 'http://localhost:5001/api/matches',
+        items: 'http://localhost:5001/api/items'
       };
 
       // Function to extract count from different response formats

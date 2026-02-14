@@ -15,7 +15,7 @@ const Users = () => {
             setLoading(true);
             setError(null);
             
-            const response = await fetch('http://localhost:5000/api/auth/users');
+            const response = await fetch('http://localhost:5001/api/auth/users');
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
@@ -65,7 +65,7 @@ const Users = () => {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/auth/delete/${userId}`, {
+            const response = await fetch(`http://localhost:5001/api/auth/delete/${userId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

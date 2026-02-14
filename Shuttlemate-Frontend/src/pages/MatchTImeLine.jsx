@@ -18,7 +18,7 @@ const MatchTimeLine = () => {
   const fetchMatches = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get("http://localhost:5000/api/matches/");
+      const response = await axios.get("http://localhost:5001/api/matches/");
       console.log("✅ API Response:", response.data);
 
       // Ensure correct data structure
@@ -48,7 +48,7 @@ const MatchTimeLine = () => {
 
   const handleDeleteMatch = async (matchId) => {
     try {
-      const response = await axios.delete(`http://localhost:5000/api/matches/${matchId}`);
+      const response = await axios.delete(`http://localhost:5001/api/matches/${matchId}`);
       
       if (response.data.success) {
         // Update state to remove the deleted match
@@ -138,13 +138,13 @@ const MatchTimeLine = () => {
       if (currentMatch?._id) {
         // Update existing match
         response = await axios.put(
-          `http://localhost:5000/api/matches/match/${currentMatch._id}`,
+          `http://localhost:5001/api/matches/match/${currentMatch._id}`,
           matchDataToSave
         );
         successMessage = "Match updated successfully!";
       } else {
         // Create new match
-        response = await axios.post("http://localhost:5000/api/matches/", matchDataToSave);
+        response = await axios.post("http://localhost:5001/api/matches/", matchDataToSave);
         successMessage = "Match created successfully!";
       }
 

@@ -27,7 +27,7 @@ const News = () => {
     // Fetch all news from API
     const fetchNews = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/news');
+            const response = await axios.get('http://localhost:5001/api/news');
             console.log("News Data:", response);
             setNews(response.data.news || response.data);
         } catch (error) {
@@ -43,7 +43,7 @@ const News = () => {
     // Fetch news by ID for editing
     const fetchNewsById = async (id) => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/news/${id}`);
+            const response = await axios.get(`http://localhost:5001/api/news/${id}`);
             const newsData = response.data.news || response.data;
             
             // Format time for datetime-local input
@@ -162,7 +162,7 @@ const News = () => {
 
                 if (editingNewsId) {
                     // Update existing news
-                    await axios.put(`http://localhost:5000/api/news/${editingNewsId}`, newsData);
+                    await axios.put(`http://localhost:5001/api/news/${editingNewsId}`, newsData);
                     Swal.fire({
                         title: 'Success!',
                         text: 'News updated successfully.',
@@ -172,7 +172,7 @@ const News = () => {
                     setIsEditModalOpen(false);
                 } else {
                     // Create new news
-                    await axios.post('http://localhost:5000/api/news', newsData);
+                    await axios.post('http://localhost:5001/api/news', newsData);
                     Swal.fire({
                         title: 'Success!',
                         text: 'News added successfully.',
@@ -246,7 +246,7 @@ const News = () => {
                     newsImage: newsImageURL
                 };
 
-                await axios.put(`http://localhost:5000/api/news/${editingNewsId}`, newsData);
+                await axios.put(`http://localhost:5001/api/news/${editingNewsId}`, newsData);
                 
                 fetchNews();
                 setIsEditModalOpen(false);
@@ -297,7 +297,7 @@ const News = () => {
             });
 
             if (result.isConfirmed) {
-                await axios.delete(`http://localhost:5000/api/news/${id}`);
+                await axios.delete(`http://localhost:5001/api/news/${id}`);
                 setNews(news.filter(item => item._id !== id));
 
                 Swal.fire({
@@ -318,7 +318,7 @@ const News = () => {
 
     // Handle update news from table
     const handleUpdateNews = (updatedNews) => {
-        axios.put(`http://localhost:5000/api/news/${updatedNews._id}`, updatedNews)
+        axios.put(`http://localhost:5001/api/news/${updatedNews._id}`, updatedNews)
             .then((response) => {
                 fetchNews();
                 Swal.fire({

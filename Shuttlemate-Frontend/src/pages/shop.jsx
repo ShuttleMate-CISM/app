@@ -43,7 +43,7 @@ const Shop = () => {
 
     const fetchShops = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/shops');
+            const response = await axios.get('http://localhost:5001/api/shops');
             setShops(response.data.shops);
         } catch (error) {
             console.error("Error fetching shops:", error);
@@ -261,7 +261,7 @@ const Shop = () => {
                     brands: brandsWithImages
                 };
     
-                await axios.post('http://localhost:5000/api/shops', newShop);
+                await axios.post('http://localhost:5001/api/shops', newShop);
                 fetchShops();
                 setFormData({
                     ShopName: '',
@@ -312,7 +312,7 @@ const Shop = () => {
             });
 
             if (result.isConfirmed) {
-                await axios.delete(`http://localhost:5000/api/shops/shop/${id}`);
+                await axios.delete(`http://localhost:5001/api/shops/shop/${id}`);
                 setShops(shops.filter(shop => shop._id !== id));
 
                 Swal.fire({
@@ -559,7 +559,7 @@ const Shop = () => {
                             brands: updatedBrands
                         };
 
-                        await axios.put(`http://localhost:5000/api/shops/shop/${shopId}`, updateData);
+                        await axios.put(`http://localhost:5001/api/shops/shop/${shopId}`, updateData);
 
                         fetchShops();
                         setIsEditModalOpen(false);
@@ -583,7 +583,7 @@ const Shop = () => {
                     brands: updatedBrands
                 };
 
-                await axios.put(`http://localhost:5000/api/shops/shop/${shopId}`, updateData);
+                await axios.put(`http://localhost:5001/api/shops/shop/${shopId}`, updateData);
 
                 fetchShops();
                 setIsEditModalOpen(false);

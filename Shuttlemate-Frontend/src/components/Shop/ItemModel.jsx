@@ -106,7 +106,7 @@ const ItemModal = ({ isOpen, onClose, onAddItem, selectedShop, selectedCategory 
             console.log(selectedCategory._id);
             // Make the API call to add the item
             const response = await axios.post(
-                `http://localhost:5000/api/shops/shop/${selectedShop._id}/categories/${selectedCategory._id}/items`,
+                `http://localhost:5001/api/shops/shop/${selectedShop._id}/categories/${selectedCategory._id}/items`,
                 itemData,
                 {
                     headers: {

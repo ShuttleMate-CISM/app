@@ -29,7 +29,7 @@ const Coachers = () => {
 
     const fetchCoachers = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/coachers');
+            const response = await axios.get('http://localhost:5001/api/coachers');
             setCoachers(response.data.coachers || response.data); // Handle both formats
         } catch (error) {
             console.error("Error fetching coachers:", error);
@@ -38,7 +38,7 @@ const Coachers = () => {
 
     const fetchCourts = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/courts');
+            const response = await axios.get('http://localhost:5001/api/courts');
             // Check the response format and handle both possibilities
             if (response.data && response.data.courts) {
                 setCourts(response.data.courts);
@@ -56,7 +56,7 @@ const Coachers = () => {
 
    const fetchCoacherById = async (id) => {
     try {
-        const response = await axios.get(`http://localhost:5000/api/Coachers/${id}`);
+        const response = await axios.get(`http://localhost:5001/api/Coachers/${id}`);
         // Handle potential different response formats
         const coacherData = response.data.coacher || response.data;
         setFormData(coacherData);
@@ -187,7 +187,7 @@ const submitCoachData = (coachData) => {
     
     if (editingCoachId) {
         // Update existing coach
-        axios.put(`http://localhost:5000/api/Coachers/${editingCoachId}`, coachData)
+        axios.put(`http://localhost:5001/api/Coachers/${editingCoachId}`, coachData)
             .then(() => {
                 fetchCoachers();
                 setIsEditModalOpen(false);
@@ -221,7 +221,7 @@ const submitCoachData = (coachData) => {
             });
     } else {
         // Add new coach
-        axios.post('http://localhost:5000/api/coachers', coachData)
+        axios.post('http://localhost:5001/api/coachers', coachData)
             .then(() => {
                 fetchCoachers();
                 toggleModal();
@@ -259,7 +259,7 @@ const submitCoachData = (coachData) => {
             });
 
             if (result.isConfirmed) {
-                await axios.delete(`http://localhost:5000/api/Coachers/coach/${id}`);
+                await axios.delete(`http://localhost:5001/api/Coachers/coach/${id}`);
                 setCoachers(coachers.filter(coach => coach._id !== id));
                 Swal.fire({
                     title: "Deleted!",
@@ -278,7 +278,7 @@ const submitCoachData = (coachData) => {
     };
     
     const handleUpdateCoacher = (updatedCoacher) => {
-        axios.put(`http://localhost:5000/api/Coachers/${updatedCoacher._id}`, updatedCoacher)
+        axios.put(`http://localhost:5001/api/Coachers/${updatedCoacher._id}`, updatedCoacher)
             .then((response) => {
                 fetchCoachers();
                 Swal.fire({

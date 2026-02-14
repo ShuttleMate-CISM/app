@@ -1,0 +1,134 @@
+---
+# ==============================================================================
+# OWASP ZAP Automation Framework - ShuttleMate Frontend Scan
+# ==============================================================================
+# This config scans the React frontend at http://localhost:5173
+# Uses the ZAP Automation Framework (AF) for structured, repeatable scans
+#
+# Usage (via Docker):
+#   docker run --rm -v $(pwd)/zap:/zap/wrk:rw \
+#     --network host \
+#     zaproxy/zap-stable \
+#     zap.sh -cmd -autorun /zap/wrk/frontend-scan.yaml
+# ==============================================================================
+
+env:
+  contexts:
+    - name: "ShuttleMate-Frontend"
+      urls:
+        - "http://host.docker.internal:5173"
+      includePaths:
+        - "http://host.docker.internal:5173.*"
+        - "http://host.docker.internal:5001.*"
+      excludePaths:
+        - ".*\\.js$"
+        - ".*\\.css$"
+        - ".*\\.png$"
+        - ".*\\.jpg$"
+        - ".*\\.svg$"
+        - ".*\\.ico$"
+        - ".*\\.woff2?$"
+        - ".*node_modules.*"
+      authentication:
+        method: "json"
+        parameters:
+          loginPageUrl: "http://host.docker.internal:5173/login"
+          loginRequestUrl: "http://host.docker.internal:5001/api/auth/login"
+          loginRequestBody: '{"username":"{%username%}","password":"{%password%}"}'
+        verification:
+          method: "response"
+          loggedInRegex: "\\Qsuccess\\E"
+          loggedOutRegex: "\\QInvalid\\E"
+      sessionManagement:
+        method: "cookie"
+      users:
+        - name: "test-user"
+          credentials:
+            username: "madhuraweerasooriye@gmail.com"
+            password: "madhuraweerasooriye@gmail.com"
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  # ---- Spider the frontend SPA ----
+  - type: spider
+    parameters:
+      context: "ShuttleMate-Frontend"
+      user: "test-user"
+      maxDuration: 2 # minutes
+      maxDepth: 5
+      maxChildren: 15
+      acceptCookies: true
+      handleODataParametersVisited: false
+      handleParameters: "USE_ALL"
+      parseComments: true
+      threadCount: 5
+
+  # ---- AJAX Spider for SPA content ----
+  - type: spiderAjax
+    parameters:
+      context: "ShuttleMate-Frontend"
+      user: "test-user"
+      maxDuration: 5 # minutes (more time for SPA)
+      maxCrawlDepth: 5
+      numberOfBrowsers: 2
+      browserId: "firefox-headless"
+      clickDefaultElems: true
+      clickElemsOnce: true
+
+  # ---- Passive Scan (analyzes responses already collected) ----
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 3 # minutes (reduced from 10)
+
+  # ---- Active Scan (sends attack payloads) ----
+  - type: activeScan
+    parameters:
+      context: "ShuttleMate-Frontend"
+      user: "test-user"
+      maxRuleDurationInMins: 2
+      maxScanDurationInMins: 10
+      threadPerHost: 3
+      delayInMs: 0
+      addQueryParam: false
+      handleAntiCSRFTokens: true
+      injectPluginIdInHeader: false
+      scanHeadersAllRequests: false
+    policyDefinition:
+      defaultStrength: "medium"
+      defaultThreshold: "medium"
+      rules:
+        # XSS - Critical for frontend
+        - id: 40012 # Reflected XSS
+          strength: "high"
+          threshold: "low"
+        - id: 40014 # Persistent XSS
+          strength: "high"
+          threshold: "low"
+        - id: 40016 # Persistent XSS (Prime)
+          strength: "high"
+          threshold: "low"
+        - id: 40017 # Persistent XSS (Spider)
+          strength: "high"
+          threshold: "low"
+
+  # ---- Generate Reports ----
+  - type: report
+    parameters:
+      template: "traditional-html-plus"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "shuttlemate-frontend-report"
+      reportTitle: "ShuttleMate Frontend - OWASP ZAP DAST Report"
+      reportDescription: "DAST security scan of ShuttleMate Frontend (React/Vite) - CISM Phase 3"
+      displayReport: false
+
+  - type: report
+    parameters:
+      template: "traditional-json-plus"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "shuttlemate-frontend-report"
+      reportTitle: "ShuttleMate Frontend - OWASP ZAP DAST Report"
+      reportDescription: "DAST security scan of ShuttleMate Frontend (React/Vite) - CISM Phase 3"
+      displayReport: false

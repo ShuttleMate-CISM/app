@@ -1,0 +1,177 @@
+---
+# ==============================================================================
+# OWASP ZAP Automation Framework - ShuttleMate Backend API Scan
+# ==============================================================================
+# This config scans the Express API backend at http://localhost:5001
+# Targets all /api/* endpoints for common web vulnerabilities
+#
+# Usage (via Docker):
+#   docker run --rm -v $(pwd)/zap:/zap/wrk:rw \
+#     --network host \
+#     zaproxy/zap-stable \
+#     zap.sh -cmd -autorun /zap/wrk/backend-scan.yaml
+# ==============================================================================
+
+env:
+  contexts:
+    - name: "ShuttleMate-API"
+      urls:
+        - "http://host.docker.internal:5001"
+      includePaths:
+        - "http://host.docker.internal:5001/api/.*"
+      excludePaths: []
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  # ---- OpenAPI Import (if you have a spec, uncomment below) ----
+  # - type: openapi
+  #   parameters:
+  #     apiUrl: "http://localhost:5001/api-docs/swagger.json"
+  #     context: "ShuttleMate-API"
+
+  # ---- Seed known API endpoints ----
+  - type: requestor
+    parameters:
+      user: ""
+    requests:
+      # Auth endpoints
+      - url: "http://host.docker.internal:5001/api/auth/login"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/auth/register"
+        method: "GET"
+      # User endpoints
+      - url: "http://host.docker.internal:5001/api/users"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/user"
+        method: "GET"
+      # Coach endpoints
+      - url: "http://host.docker.internal:5001/api/coachers"
+        method: "GET"
+      # Court endpoints
+      - url: "http://host.docker.internal:5001/api/courts"
+        method: "GET"
+      # Shop endpoints
+      - url: "http://host.docker.internal:5001/api/shops"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/shops/search?q=test"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/items"
+        method: "GET"
+      # Match endpoints
+      - url: "http://host.docker.internal:5001/api/matches"
+        method: "GET"
+      # News endpoints
+      - url: "http://host.docker.internal:5001/api/news"
+        method: "GET"
+      # Video endpoints
+      - url: "http://host.docker.internal:5001/api/videos"
+        method: "GET"
+      # Payment endpoints
+      - url: "http://host.docker.internal:5001/api/payment"
+        method: "GET"
+      # Notification endpoints
+      - url: "http://host.docker.internal:5001/api/notifications"
+        method: "GET"
+
+  # ---- Spider the API ----
+  - type: spider
+    parameters:
+      context: "ShuttleMate-API"
+      maxDuration: 2
+      maxDepth: 3
+      maxChildren: 10
+      acceptCookies: true
+      threadCount: 3
+
+  # ---- Passive Scan ----
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 3
+
+  # ---- Active Scan ----
+  - type: activeScan
+    parameters:
+      context: "ShuttleMate-API"
+      maxRuleDurationInMins: 2
+      maxScanDurationInMins: 8
+      threadPerHost: 3
+      delayInMs: 0
+      addQueryParam: true
+      handleAntiCSRFTokens: false
+      injectPluginIdInHeader: false
+      scanHeadersAllRequests: true
+    policyDefinition:
+      defaultStrength: "medium"
+      defaultThreshold: "medium"
+      rules:
+        # SQL/NoSQL Injection
+        - id: 40018 # SQL Injection
+          strength: "high"
+          threshold: "low"
+        - id: 40019 # SQL Injection (MySQL)
+          strength: "high"
+          threshold: "low"
+        - id: 40020 # SQL Injection (Hypersonic)
+          strength: "high"
+          threshold: "low"
+        - id: 40021 # SQL Injection (Oracle)
+          strength: "high"
+          threshold: "low"
+        - id: 40022 # SQL Injection (PostgreSQL)
+          strength: "high"
+          threshold: "low"
+        # Auth / Session
+        - id: 10010 # Cookie without Secure flag
+          strength: "medium"
+          threshold: "low"
+        - id: 10011 # Cookie without HttpOnly flag
+          strength: "medium"
+          threshold: "low"
+        # Server info disclosure
+        - id: 10036 # Server Leaks Version Info
+          strength: "medium"
+          threshold: "low"
+        - id: 10037 # Server Header Info
+          strength: "medium"
+          threshold: "low"
+        # Security headers
+        - id: 10038 # CSP Header
+          strength: "medium"
+          threshold: "low"
+        - id: 10020 # X-Frame-Options
+          strength: "medium"
+          threshold: "low"
+        # CORS
+        - id: 40040 # CORS Misconfiguration
+          strength: "high"
+          threshold: "low"
+        # Path Traversal
+        - id: 6 # Path Traversal
+          strength: "high"
+          threshold: "low"
+        # IDOR
+        - id: 40013 # Session ID in URL Rewrite
+          strength: "medium"
+          threshold: "low"
+
+  # ---- Generate Reports ----
+  - type: report
+    parameters:
+      template: "traditional-html-plus"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "shuttlemate-backend-report"
+      reportTitle: "ShuttleMate Backend API - OWASP ZAP DAST Report"
+      reportDescription: "DAST security scan of ShuttleMate Backend API (Express/Node.js) - CISM Phase 3"
+      displayReport: false
+
+  - type: report
+    parameters:
+      template: "traditional-json-plus"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "shuttlemate-backend-report"
+      reportTitle: "ShuttleMate Backend API - OWASP ZAP DAST Report"
+      reportDescription: "DAST security scan of ShuttleMate Backend API (Express/Node.js) - CISM Phase 3"
+      displayReport: false

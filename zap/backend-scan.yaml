@@ -82,9 +82,9 @@ jobs:
       context: "ShuttleMate-API"
       maxDuration: 2
       maxDepth: 3
-      maxChildren: 10
+      maxChildren: 8
       acceptCookies: true
-      threadCount: 3
+      threadCount: 2
 
   # ---- Passive Scan ----
   - type: passiveScan-wait
@@ -97,8 +97,8 @@ jobs:
       context: "ShuttleMate-API"
       maxRuleDurationInMins: 2
       maxScanDurationInMins: 8
-      threadPerHost: 3
-      delayInMs: 0
+      threadPerHost: 2
+      delayInMs: 50
       addQueryParam: true
       handleAntiCSRFTokens: false
       injectPluginIdInHeader: false

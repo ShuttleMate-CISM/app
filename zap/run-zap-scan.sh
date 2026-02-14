@@ -35,6 +35,10 @@ REPORTS_DIR="$ZAP_DIR/reports"
 # ZAP Docker image
 ZAP_IMAGE="zaproxy/zap-stable"
 
+# Memory limits for 8GB machines
+DOCKER_MEMORY="--memory=2g --memory-swap=2g"
+ZAP_JVM_OPTS="-Xmx512m"
+
 FRONTEND_URL="http://localhost:5173"
 BACKEND_URL="http://localhost:5001"
 
@@ -159,9 +163,10 @@ run_frontend_scan() {
 
     docker run --rm \
         -v "$ZAP_DIR:/zap/wrk:rw" \
+        $DOCKER_MEMORY \
         $DOCKER_NETWORK_FLAG \
         "$ZAP_IMAGE" \
-        zap.sh -cmd -autorun /zap/wrk/frontend-scan.yaml \
+        zap.sh -cmd -Xmx512m -autorun /zap/wrk/frontend-scan.yaml \
         2>&1 | while IFS= read -r line; do
             echo -e "  ${BLUE}[$(step_elapsed)]${NC} $line"
         done | tee "$REPORTS_DIR/frontend-scan-log-${TIMESTAMP}.txt"
@@ -202,9 +207,10 @@ run_backend_scan() {
 
     docker run --rm \
         -v "$ZAP_DIR:/zap/wrk:rw" \
+        $DOCKER_MEMORY \
         $DOCKER_NETWORK_FLAG \
         "$ZAP_IMAGE" \
-        zap.sh -cmd -autorun /zap/wrk/backend-scan.yaml \
+        zap.sh -cmd -Xmx512m -autorun /zap/wrk/backend-scan.yaml \
         2>&1 | while IFS= read -r line; do
             echo -e "  ${BLUE}[$(step_elapsed)]${NC} $line"
         done | tee "$REPORTS_DIR/backend-scan-log-${TIMESTAMP}.txt"
@@ -242,6 +248,7 @@ run_baseline_scan() {
         step_timer_start
         docker run --rm \
             -v "$REPORTS_DIR:/zap/wrk:rw" \
+            $DOCKER_MEMORY \
             $DOCKER_NETWORK_FLAG \
             "$ZAP_IMAGE" \
             zap-baseline.py \
@@ -262,6 +269,7 @@ run_baseline_scan() {
         step_timer_start
         docker run --rm \
             -v "$REPORTS_DIR:/zap/wrk:rw" \
+            $DOCKER_MEMORY \
             $DOCKER_NETWORK_FLAG \
             "$ZAP_IMAGE" \
             zap-baseline.py \
@@ -304,6 +312,9 @@ print_summary() {
 # ==============================================================================
 
 print_banner
+echo -e "${YELLOW}💡 TIP: In Docker Desktop → Settings → Resources, limit RAM to 2-3GB${NC}"
+echo -e "${YELLOW}   to prevent Docker from starving your system of memory.${NC}"
+echo ""
 check_docker
 create_reports_dir
 

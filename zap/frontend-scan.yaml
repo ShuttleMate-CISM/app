@@ -58,25 +58,17 @@ jobs:
       context: "ShuttleMate-Frontend"
       user: "test-user"
       maxDuration: 2 # minutes
-      maxDepth: 5
-      maxChildren: 15
+      maxDepth: 3
+      maxChildren: 10
       acceptCookies: true
       handleODataParametersVisited: false
       handleParameters: "USE_ALL"
-      parseComments: true
-      threadCount: 5
+      parseComments: false
+      threadCount: 2
 
-  # ---- AJAX Spider for SPA content ----
-  - type: spiderAjax
-    parameters:
-      context: "ShuttleMate-Frontend"
-      user: "test-user"
-      maxDuration: 5 # minutes (more time for SPA)
-      maxCrawlDepth: 5
-      numberOfBrowsers: 2
-      browserId: "firefox-headless"
-      clickDefaultElems: true
-      clickElemsOnce: true
+  # NOTE: AJAX Spider removed — it launches headless browsers inside Docker
+  # which uses 2-3GB+ RAM. On 8GB machines this causes OOM freezes.
+  # The traditional spider above is sufficient for collecting URLs to scan.
 
   # ---- Passive Scan (analyzes responses already collected) ----
   - type: passiveScan-wait
@@ -89,8 +81,9 @@ jobs:
       context: "ShuttleMate-Frontend"
       user: "test-user"
       maxRuleDurationInMins: 2
-      maxScanDurationInMins: 10
-      threadPerHost: 3
+      maxScanDurationInMins: 8
+      threadPerHost: 2
+      delayInMs: 50
       delayInMs: 0
       addQueryParam: false
       handleAntiCSRFTokens: true

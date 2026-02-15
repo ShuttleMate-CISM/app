@@ -185,12 +185,12 @@ router.get('/payments/user/:userId', async (req, res) => {
     const { userId } = req.params;
     const { limit = 10, skip = 0 } = req.query;
 
-    const payments = await Payment.find({ userId })
+    const payments = await Payment.find({ userId: String(userId) })
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip(parseInt(skip));
 
-    const total = await Payment.countDocuments({ userId });
+    const total = await Payment.countDocuments({ userId: String(userId) });
 
     res.json({
       payments,

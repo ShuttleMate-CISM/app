@@ -94,7 +94,7 @@ router.post('/save-payment', async (req, res) => {
       console.error('Error verifying payment with Stripe:', stripeError);
     }
 
-    const existingPayment = await Payment.findOne({ PaymentID: paymentIntentId });
+    const existingPayment = await Payment.findOne({ PaymentID: String(paymentIntentId) });
     if (existingPayment) {
       return res.status(409).json({
         error: 'Payment already recorded',
@@ -165,7 +165,7 @@ router.get('/payment/:paymentIntentId', async (req, res) => {
   try {
     const { paymentIntentId } = req.params;
 
-    const payment = await Payment.findOne({ PaymentID: paymentIntentId });
+    const payment = await Payment.findOne({ PaymentID: String(paymentIntentId) });
 
     if (!payment) {
       return res.status(404).json({ error: 'Payment not found' });

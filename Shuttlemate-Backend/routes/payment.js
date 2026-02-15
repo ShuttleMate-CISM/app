@@ -102,7 +102,7 @@ router.post('/save-payment', async (req, res) => {
       });
     }
 
-    const shop = await Shop.findOne({ "items._id": itemId });
+    const shop = await Shop.findOne({ "items._id": String(itemId) });
     if (!shop) {
       return res.status(404).json({ error: 'Item not found in any shop' });
     }
@@ -131,7 +131,7 @@ router.post('/save-payment', async (req, res) => {
 
     const savedPayment = await payment.save();
 
-    const user = await User.findOne({ firebaseUid: userId });
+    const user = await User.findOne({ firebaseUid: String(userId) });
     console.log('User found:', user ? 'Yes' : 'No');
     console.log('User email:', user?.email);
     
@@ -211,7 +211,7 @@ router.get('/payments', async (req, res) => {
 
     let query = {};
     if (status) {
-      query.status = status;
+      query.status = String(status);
     }
 
     const payments = await Payment.find(query)

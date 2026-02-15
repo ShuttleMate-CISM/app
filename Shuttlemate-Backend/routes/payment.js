@@ -210,8 +210,9 @@ router.get('/payments', async (req, res) => {
     const { limit = 20, skip = 0, status } = req.query;
 
     let query = {};
-    if (status) {
-      query.status = String(status);
+    const allowedStatuses = ['pending', 'succeeded', 'failed', 'canceled', 'refunded'];
+    if (status && allowedStatuses.includes(status)) {
+      query.status = status;
     }
 
     const payments = await Payment.find(query)

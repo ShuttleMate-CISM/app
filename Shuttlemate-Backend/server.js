@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import cors from "cors";
+import Stripe from "stripe";
 import { connectDB } from "./config/db.js";
 import videoRoutes from "./routes/video.js";
 import CoachRoutes from "./routes/Coachers.js";
@@ -23,6 +24,37 @@ import NewsRoute from "./routes/news.js";
 // Express App
 const app = express();
 const port = process.env.PORT || 5001;
+
+// Stripe Webhook Configuration
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+// STRIPE WEBHOOK ROUTE (Must be before express.json() for raw body parsing)
+app.post(
+  "/api/payment/webhook",
+  express.raw({ type: "application/json" }),
+  (request, response) => {
+    const sig = request.headers["stripe-signature"];
+    let event;
+
+    try {
+      // SECURITY CHECK: Verify the webhook signature
+      event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    } catch (err) {
+      console.error(`Webhook Signature Verification Failed: ${err.message}`);
+      return response.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object;
+      console.log("Payment captured verified:", paymentIntent.id);
+      // TODO: Update your Booking Status in Database here
+    }
+
+    response.send();
+  }
+);
 
 // CORS Configuration
 const corsOptions = {

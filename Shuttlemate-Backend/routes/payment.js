@@ -94,7 +94,7 @@ router.post('/save-payment', async (req, res) => {
       console.error('Error verifying payment with Stripe:', stripeError);
     }
 
-    const existingPayment = await Payment.findOne({ PaymentID: paymentIntentId });
+    const existingPayment = await Payment.findOne({ PaymentID: String(paymentIntentId) });
     if (existingPayment) {
       return res.status(409).json({
         error: 'Payment already recorded',
@@ -102,7 +102,7 @@ router.post('/save-payment', async (req, res) => {
       });
     }
 
-    const shop = await Shop.findOne({ "items._id": itemId });
+    const shop = await Shop.findOne({ "items._id": String(itemId) });
     if (!shop) {
       return res.status(404).json({ error: 'Item not found in any shop' });
     }
@@ -131,7 +131,7 @@ router.post('/save-payment', async (req, res) => {
 
     const savedPayment = await payment.save();
 
-    const user = await User.findOne({ firebaseUid: userId });
+    const user = await User.findOne({ firebaseUid: String(userId) });
     console.log('User found:', user ? 'Yes' : 'No');
     console.log('User email:', user?.email);
     
@@ -165,7 +165,7 @@ router.get('/payment/:paymentIntentId', async (req, res) => {
   try {
     const { paymentIntentId } = req.params;
 
-    const payment = await Payment.findOne({ PaymentID: paymentIntentId });
+    const payment = await Payment.findOne({ PaymentID: String(paymentIntentId) });
 
     if (!payment) {
       return res.status(404).json({ error: 'Payment not found' });
@@ -185,12 +185,12 @@ router.get('/payments/user/:userId', async (req, res) => {
     const { userId } = req.params;
     const { limit = 10, skip = 0 } = req.query;
 
-    const payments = await Payment.find({ userId })
+    const payments = await Payment.find({ userId: String(userId) })
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip(parseInt(skip));
 
-    const total = await Payment.countDocuments({ userId });
+    const total = await Payment.countDocuments({ userId: String(userId) });
 
     res.json({
       payments,
@@ -210,7 +210,8 @@ router.get('/payments', async (req, res) => {
     const { limit = 20, skip = 0, status } = req.query;
 
     let query = {};
-    if (status) {
+    const allowedStatuses = ['pending', 'succeeded', 'failed', 'canceled', 'refunded'];
+    if (status && allowedStatuses.includes(status)) {
       query.status = status;
     }
 
@@ -296,7 +297,7 @@ router.get('/payments/stats/:userId?', async (req, res) => {
 
     let matchStage = {};
     if (userId) {
-      matchStage = { userId };
+      matchStage = { userId: String(userId) };
     }
 
     const stats = await Payment.aggregate([

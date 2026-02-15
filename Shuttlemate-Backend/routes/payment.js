@@ -297,7 +297,7 @@ router.get('/payments/stats/:userId?', async (req, res) => {
 
     let matchStage = {};
     if (userId) {
-      matchStage = { userId };
+      matchStage = { userId: String(userId) };
     }
 
     const stats = await Payment.aggregate([

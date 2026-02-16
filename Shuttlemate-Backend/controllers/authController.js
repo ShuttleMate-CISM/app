@@ -3,11 +3,24 @@ import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import logAuthEvent from "../utils/authLogger.js";
 
+const toSafeString = (value) => (typeof value === "string" ? value.trim() : "");
+
 // Register Controller
 export const register = async (req, res) => {
   try {
-    const { username, password, role, email } = req.body;
+    const username = toSafeString(req.body?.username);
+    const password = toSafeString(req.body?.password);
+    const role = toSafeString(req.body?.role);
+    const email = toSafeString(req.body?.email);
     const ipAddress = req.ip || req.connection.remoteAddress || "unknown";
+
+    if (!username) {
+      logAuthEvent("unknown", ipAddress, "FAIL", "REGISTER");
+      return res.status(400).json({
+        success: false,
+        message: "Username is required",
+      });
+    }
 
     // Validate password complexity (NIST Guidelines - minimum 8 characters)
     if (!password || password.length < 8) {
@@ -57,8 +70,17 @@ export const register = async (req, res) => {
 // Login Controller
 export const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const username = toSafeString(req.body?.username);
+    const password = toSafeString(req.body?.password);
     const ipAddress = req.ip || req.connection.remoteAddress || "unknown";
+
+    if (!username || !password) {
+      logAuthEvent(username || "unknown", ipAddress, "FAIL", "LOGIN");
+      return res.status(400).json({
+        success: false,
+        message: "Invalid username or password",
+      });
+    }
 
     const user = await User.findOne({ username });
 

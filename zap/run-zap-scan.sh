@@ -18,6 +18,7 @@
 # ==============================================================================
 
 set -e
+set -o pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -139,6 +140,33 @@ create_reports_dir() {
     echo -e "${GREEN}✓ Reports directory ready: $REPORTS_DIR${NC}"
 }
 
+validate_expected_reports() {
+    local scan_name=$1
+    local report_base=$2
+    local log_file=$3
+
+    local expected_html="$REPORTS_DIR/${report_base}.html"
+    local expected_json="$REPORTS_DIR/${report_base}.json"
+
+    if [ ! -f "$expected_html" ] || [ ! -f "$expected_json" ]; then
+        echo -e "${RED}ERROR: ${scan_name} scan did not generate expected report files.${NC}"
+        echo "Expected:"
+        echo "  - $expected_html"
+        echo "  - $expected_json"
+        echo ""
+        echo "Possible causes:"
+        echo "  - Scan was interrupted before completion"
+        echo "  - Docker container exited with an error"
+        echo "  - ZAP active scan did not finish"
+        echo ""
+        if [ -f "$log_file" ]; then
+            echo "Last 30 lines from log ($log_file):"
+            tail -n 30 "$log_file" || true
+        fi
+        return 1
+    fi
+}
+
 # ==============================================================================
 # Scan Functions
 # ==============================================================================
@@ -160,8 +188,9 @@ run_frontend_scan() {
     echo "Estimated time: 5-10 minutes. Live output below:"
     echo ""
     step_timer_start
+    local frontend_log="$REPORTS_DIR/frontend-scan-log-${TIMESTAMP}.txt"
 
-    docker run --rm \
+    if ! docker run --rm \
         -v "$ZAP_DIR:/zap/wrk:rw" \
         $DOCKER_MEMORY \
         $DOCKER_NETWORK_FLAG \
@@ -169,7 +198,13 @@ run_frontend_scan() {
         zap.sh -cmd -Xmx512m -autorun /zap/wrk/frontend-scan.yaml \
         2>&1 | while IFS= read -r line; do
             echo -e "  ${BLUE}[$(step_elapsed)]${NC} $line"
-        done | tee "$REPORTS_DIR/frontend-scan-log-${TIMESTAMP}.txt"
+        done | tee "$frontend_log"; then
+        echo -e "${RED}ERROR: Frontend ZAP scan process failed before completion.${NC}"
+        echo "Check log: $frontend_log"
+        return 1
+    fi
+
+    validate_expected_reports "Frontend" "shuttlemate-frontend-report" "$frontend_log"
 
     echo ""
     echo -e "${GREEN}✓ Frontend scan complete! (took $(step_elapsed))${NC}"
@@ -204,8 +239,9 @@ run_backend_scan() {
     echo "Estimated time: 5-10 minutes. Live output below:"
     echo ""
     step_timer_start
+    local backend_log="$REPORTS_DIR/backend-scan-log-${TIMESTAMP}.txt"
 
-    docker run --rm \
+    if ! docker run --rm \
         -v "$ZAP_DIR:/zap/wrk:rw" \
         $DOCKER_MEMORY \
         $DOCKER_NETWORK_FLAG \
@@ -213,7 +249,13 @@ run_backend_scan() {
         zap.sh -cmd -Xmx512m -autorun /zap/wrk/backend-scan.yaml \
         2>&1 | while IFS= read -r line; do
             echo -e "  ${BLUE}[$(step_elapsed)]${NC} $line"
-        done | tee "$REPORTS_DIR/backend-scan-log-${TIMESTAMP}.txt"
+        done | tee "$backend_log"; then
+        echo -e "${RED}ERROR: Backend ZAP scan process failed before completion.${NC}"
+        echo "Check log: $backend_log"
+        return 1
+    fi
+
+    validate_expected_reports "Backend" "shuttlemate-backend-report" "$backend_log"
 
     echo ""
     echo -e "${GREEN}✓ Backend scan complete! (took $(step_elapsed))${NC}"

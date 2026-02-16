@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog } from '@headlessui/react';
+import React, { useState, useEffect } from "react";
+import { Dialog } from "@headlessui/react";
 
 const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
   const [formData, setFormData] = useState({
-    MatchPhoto: '',
-    MatchName: '',
-    StartDate: '',
-    EndDate: '',
-    Weblink: '',
+    MatchPhoto: "",
+    MatchName: "",
+    StartDate: "",
+    EndDate: "",
+    Weblink: "",
   });
-  
+
   // For file preview
   const [filePreview, setFilePreview] = useState(null);
   // To store the actual file object
@@ -18,11 +18,11 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
   useEffect(() => {
     if (match) {
       setFormData({
-        MatchPhoto: match.MatchPhoto || '',
-        MatchName: match.MatchName || '',
-        StartDate: match.StartDate ? match.StartDate.substring(0, 10) : '',
-        EndDate: match.EndDate ? match.EndDate.substring(0, 10) : '',
-        Weblink: match.Weblink || '',
+        MatchPhoto: match.MatchPhoto || "",
+        MatchName: match.MatchName || "",
+        StartDate: match.StartDate ? match.StartDate.substring(0, 10) : "",
+        EndDate: match.EndDate ? match.EndDate.substring(0, 10) : "",
+        Weblink: match.Weblink || "",
       });
       setFilePreview(match.MatchPhoto || null);
       setSelectedFile(null);
@@ -33,11 +33,11 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
 
   const resetForm = () => {
     setFormData({
-      MatchPhoto: '',
-      MatchName: '',
-      StartDate: '',
-      EndDate: '',
-      Weblink: '',
+      MatchPhoto: "",
+      MatchName: "",
+      StartDate: "",
+      EndDate: "",
+      Weblink: "",
     });
     setFilePreview(null);
     setSelectedFile(null);
@@ -60,25 +60,25 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
   const fetchMatches = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5001/api/matches/');
+      const response = await fetch(`${window.__API_BASE_URL__}/api/matches/`);
       if (response.ok) {
         const data = await response.json();
         // Ensure data is an array before setting it
         setMatches(Array.isArray(data) ? data : []);
-        
+
         // Debug log to see what's coming from the API
-        console.log('API response data:', data);
+        console.log("API response data:", data);
       } else {
-        throw new Error('Failed to fetch matches');
+        throw new Error("Failed to fetch matches");
       }
     } catch (error) {
-      console.error('Error fetching matches:', error);
+      console.error("Error fetching matches:", error);
       // Initialize as empty array on error
       setMatches([]);
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to load matches. Please try again!',
+        icon: "error",
+        title: "Error",
+        text: "Failed to load matches. Please try again!",
       });
     } finally {
       setIsLoading(false);
@@ -87,27 +87,31 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Create a data object with the form data and the file if present
     const dataToSave = {
       ...formData,
       // If there's a new file selected, pass it for upload
-      MatchPhotoFile: selectedFile
+      MatchPhotoFile: selectedFile,
     };
-    
+
     onSave(dataToSave);
   };
 
   return (
-    <Dialog open={isOpen} onClose={uploading ? () => {} : onClose} className="relative z-50">
+    <Dialog
+      open={isOpen}
+      onClose={uploading ? () => {} : onClose}
+      className="relative z-50"
+    >
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      
+
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="w-full max-w-md p-6 bg-white rounded-lg">
           <Dialog.Title className="text-xl font-medium text-gray-900">
-            {match ? 'Edit Match' : 'Add New Match'}
+            {match ? "Edit Match" : "Add New Match"}
           </Dialog.Title>
-          
+
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             {/* Match Photo */}
             <div>
@@ -122,11 +126,10 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
               </div>
-              
+
               {/* Preview Image */}
-             
             </div>
-            
+
             {/* Match Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -141,7 +144,7 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
                 className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md"
               />
             </div>
-            
+
             {/* Start Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -156,7 +159,7 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
                 className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md"
               />
             </div>
-            
+
             {/* End Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -171,7 +174,7 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
                 className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md"
               />
             </div>
-            
+
             {/* Web Link */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -185,7 +188,7 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
                 className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md"
               />
             </div>
-            
+
             {/* Action Buttons */}
             <div className="flex justify-end pt-4 space-x-3">
               <button
@@ -201,7 +204,7 @@ const MatchesModal = ({ isOpen, onClose, match, onSave, uploading }) => {
                 disabled={uploading}
                 className="px-4 py-2 text-white rounded bg-amber-500 hover:bg-yellow-400 disabled:opacity-50"
               >
-                {uploading ? 'Saving...' : 'Save'}
+                {uploading ? "Saving..." : "Save"}
               </button>
             </div>
           </form>

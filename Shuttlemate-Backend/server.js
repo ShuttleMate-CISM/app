@@ -33,12 +33,9 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   exposedHeaders: ["Content-Range", "X-Content-Range"],
 };
-
-// Middlewares
-// SECURITY HEADERS (Helmet - Infrastructure Security)
-app.use(helmet()); // Sets various HTTP security headers
-app.use(helmet.hidePoweredBy()); // Explicitly hide X-Powered-By header
-app.use(helmet.frameguard({ action: "deny" })); // Prevent Clickjacking
+app.use(helmet()); 
+app.use(helmet.hidePoweredBy());
+app.use(helmet.frameguard({ action: "deny" }));
 app.use(cors(corsOptions));
 app.use(express.json());
 

@@ -28,10 +28,10 @@ Non-auth files/issues are intentionally out of scope for this report.
 
 Auth-scoped SAST count:
 
-| File | Open Blocker Findings |
-|---|---:|
-| `Shuttlemate-Backend/controllers/authController.js` | 2 |
-| **Auth-only Total** | **2** |
+| File                                                | Open Blocker Findings |
+| --------------------------------------------------- | --------------------: |
+| `Shuttlemate-Backend/controllers/authController.js` |                     2 |
+| **Auth-only Total**                                 |                 **2** |
 
 ### DAST (ZAP, Runtime/API-level)
 
@@ -47,16 +47,19 @@ Latest report artifacts used:
 #### Backend DAST (`shuttlemate-backend-report.json`) — Auth endpoints only
 
 Observed auth-endpoint alerts:
+
 - Medium:
-   - `CSP: Failure to Define Directive with No Fallback` (count: 2, seen on auth GET endpoints)
+  - `CSP: Failure to Define Directive with No Fallback` (count: 2, seen on auth GET endpoints)
 - Low:
-   - `Server Leaks Information via "X-Powered-By"` (count: 2, seen on auth GET endpoints)
+  - `Server Leaks Information via "X-Powered-By"` (count: 2, seen on auth GET endpoints)
 
 Auth endpoints observed in backend scan:
+
 - `GET /api/auth/login` -> `404`
 - `GET /api/auth/register` -> `404`
 
 Coverage profile:
+
 - Endpoint count (full backend scan): `17`
 - Method mix (full backend scan): `GET = 100%`
 - Response distribution: `2xx = 30%`, `4xx = 69%`
@@ -65,11 +68,13 @@ Coverage profile:
 #### Frontend DAST (`shuttlemate-frontend-report-20260216_144044.json`) — Auth-related signal only
 
 Observed auth-related alert evidence:
+
 - `POST /api/auth/login` tested against backend `5001`
 - `HTTP Only Site` (count: 1, auth login POST context)
 - `Server Leaks Information via "X-Powered-By"` (count: 1, auth login POST context)
 
 Auth coverage signal:
+
 - Includes `POST /api/auth/login` request testing (backend `5001`), but response observed was `429 Too Many Requests` (rate-limited), reducing exploit-validation quality.
 - No equivalent validated `POST /api/auth/register` injection result in this run.
 
@@ -111,27 +116,27 @@ Local `authController.js` changes already include NoSQL-focused string normaliza
 
 ## 5) Issues Matrix: Auth Scope (Current vs Next Fix)
 
-| Area | Current status | Next fix |
-|---|---|---|
-| NoSQL injection (`S5147` style, auth) | 2 open Blocker issues in `authController.js` | Harden/verify auth query input guards and re-run Sonar for auth controller closure |
-| Auth brute-force / lockout | Implemented | Add automated tests for lockout threshold, duration, and reset flow |
-| User enumeration controls | Implemented in login | Extend consistent generic errors to all auth-adjacent endpoints |
-| JWT validation | Improved claim validation | Enforce explicit JWT options (`algorithms`, expiration policy), secret rotation plan |
-| Auth logging | Implemented | Add retention policy and secure file permissions |
-| DAST auth injection coverage | Partial (`POST /api/auth/login` hit but rate-limited; backend auth endpoints still GET-only) | Add dedicated ZAP script scenarios for unauth/auth `POST` login/register payload tests, including injection payloads |
-| HTTP/TLS posture (auth traffic) | `HTTP Only Site` appears in auth login test context | Enable TLS in runtime/proxy and rerun auth-focused DAST |
-| Security headers (auth responses) | `X-Powered-By` and CSP directive gap appear on auth paths | Harden auth response headers in Express and rerun auth-focused DAST |
+| Area                                  | Current status                                                                               | Next fix                                                                                                             |
+| ------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| NoSQL injection (`S5147` style, auth) | 2 open Blocker issues in `authController.js`                                                 | Harden/verify auth query input guards and re-run Sonar for auth controller closure                                   |
+| Auth brute-force / lockout            | Implemented                                                                                  | Add automated tests for lockout threshold, duration, and reset flow                                                  |
+| User enumeration controls             | Implemented in login                                                                         | Extend consistent generic errors to all auth-adjacent endpoints                                                      |
+| JWT validation                        | Improved claim validation                                                                    | Enforce explicit JWT options (`algorithms`, expiration policy), secret rotation plan                                 |
+| Auth logging                          | Implemented                                                                                  | Add retention policy and secure file permissions                                                                     |
+| DAST auth injection coverage          | Partial (`POST /api/auth/login` hit but rate-limited; backend auth endpoints still GET-only) | Add dedicated ZAP script scenarios for unauth/auth `POST` login/register payload tests, including injection payloads |
+| HTTP/TLS posture (auth traffic)       | `HTTP Only Site` appears in auth login test context                                          | Enable TLS in runtime/proxy and rerun auth-focused DAST                                                              |
+| Security headers (auth responses)     | `X-Powered-By` and CSP directive gap appear on auth paths                                    | Harden auth response headers in Express and rerun auth-focused DAST                                                  |
 
 ## 6) Auth Findings Resolution Plan (Per `SM-POL-S1-001`)
 
-| Finding (Auth) | Resolution Action | Policy Clause | Owner | Closure Evidence |
-|---|---|---|---|---|
-| Sonar SAST: 2 Blocker NoSQL query-construction issues in `authController.js` | Validate `username/password` as primitive strings only, reject object/operator payloads before query execution, keep query values sanitized-only | 3.2.3, 3.4 | S1 | Sonar rerun: 0 open auth Blockers + test cases for `{"username":{"$ne":""}}` |
-| DAST auth POST coverage incomplete (`/register` missing, `/login` mostly rate-limited) | Update ZAP auth plan to run explicit `POST /api/auth/login` and `POST /api/auth/register` injection payloads | 2, 5.2 | S1 | ZAP report shows both POST auth endpoints exercised with JSON payload evidence |
-| DAST auth tests skewed by `429 Too Many Requests` | Run scans in controlled window/profile so both non-throttled and throttled responses are captured | 3.2.1, 3.2.2, 6 | S1 + Reviewers | Report includes successful endpoint execution + expected `429` at threshold with `Retry-After` |
-| Auth response fingerprinting (`X-Powered-By`) | Disable framework signature header for auth responses including error responses | 3.3 | S1 | ZAP rerun: no `X-Powered-By` on auth endpoints |
-| CSP directive gap on auth endpoint responses | Set complete CSP including `frame-ancestors` and `form-action` across auth responses and error paths | 3.2.3, 3.3 | S1 + S6 | ZAP rerun: no auth-path CSP directive gap alert |
-| HTTP-only risk for auth traffic | Enforce TLS 1.2+ for auth endpoints; block plaintext credential transit | 3.1.2 | S5 | Auth scans run over HTTPS without HTTP-only auth transport finding |
+| Finding (Auth)                                                                         | Resolution Action                                                                                                                                | Policy Clause   | Owner          | Closure Evidence                                                                               |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- | -------------- | ---------------------------------------------------------------------------------------------- |
+| Sonar SAST: 2 Blocker NoSQL query-construction issues in `authController.js`           | Validate `username/password` as primitive strings only, reject object/operator payloads before query execution, keep query values sanitized-only | 3.2.3, 3.4      | S1             | Sonar rerun: 0 open auth Blockers + test cases for `{"username":{"$ne":""}}`                   |
+| DAST auth POST coverage incomplete (`/register` missing, `/login` mostly rate-limited) | Update ZAP auth plan to run explicit `POST /api/auth/login` and `POST /api/auth/register` injection payloads                                     | 2, 5.2          | S1             | ZAP report shows both POST auth endpoints exercised with JSON payload evidence                 |
+| DAST auth tests skewed by `429 Too Many Requests`                                      | Run scans in controlled window/profile so both non-throttled and throttled responses are captured                                                | 3.2.1, 3.2.2, 6 | S1 + Reviewers | Report includes successful endpoint execution + expected `429` at threshold with `Retry-After` |
+| Auth response fingerprinting (`X-Powered-By`)                                          | Disable framework signature header for auth responses including error responses                                                                  | 3.3             | S1             | ZAP rerun: no `X-Powered-By` on auth endpoints                                                 |
+| CSP directive gap on auth endpoint responses                                           | Set complete CSP including `frame-ancestors` and `form-action` across auth responses and error paths                                             | 3.2.3, 3.3      | S1 + S6        | ZAP rerun: no auth-path CSP directive gap alert                                                |
+| HTTP-only risk for auth traffic                                                        | Enforce TLS 1.2+ for auth endpoints; block plaintext credential transit                                                                          | 3.1.2           | S5             | Auth scans run over HTTPS without HTTP-only auth transport finding                             |
 
 ## 7) Auth Lead Execution Sequence (S1)
 

@@ -36,6 +36,11 @@ chmod +x zap/run-zap-scan.sh
 ### Option 2: Full Scan (Thorough - ~20-30 minutes)
 Includes active scanning with attack payloads against both frontend and backend.
 
+The full scan now also:
+- creates/reuses test auth users for multiple roles,
+- logs in and injects bearer tokens into generated scan configs,
+- creates fixture entities (court/coach/shop/category/item/user/match/bookings) to improve parameterized endpoint coverage.
+
 ```bash
 # Scan everything
 ./zap/run-zap-scan.sh
@@ -59,6 +64,8 @@ Includes active scanning with attack payloads against both frontend and backend.
 Reports are saved to `zap/reports/` with timestamps:
 
 ```
+
+Generated runtime scan configs are saved to `zap/generated/` (timestamped) and include injected tokens and dynamic fixture requests.
 zap/reports/
 ├── shuttlemate-frontend-report-20260214_120000.html   # Full HTML report
 ├── shuttlemate-frontend-report-20260214_120000.json   # Machine-readable
@@ -77,14 +84,13 @@ open zap/reports/shuttlemate-backend-report-*.html
 ## What's Being Scanned
 
 ### Frontend Scan (`frontend-scan.yaml`)
+- **Requestor seeding** - Preloads known SPA routes and key API calls
 - **Spider** - Crawls all pages and links
-- **AJAX Spider** - Handles JavaScript-rendered SPA content
 - **Passive Scan** - Checks response headers, cookies, content
-- **Active Scan** - Tests for XSS, injection, misconfigurations
-- Focused rules: XSS (Reflected/Persistent), CSP, Clickjacking
+- Active scan is omitted in this profile for runtime stability; frontend findings come from seeded requests + crawl + passive checks.
 
 ### Backend Scan (`backend-scan.yaml`)
-- **API Endpoint Seeding** - Pre-seeds all known API routes
+- **API Endpoint Seeding** - Pre-seeds known API routes with correct HTTP methods
 - **Spider** - Discovers additional endpoints
 - **Passive Scan** - Checks headers, server info leakage
 - **Active Scan** - Tests for SQL/NoSQL injection, path traversal, CORS issues

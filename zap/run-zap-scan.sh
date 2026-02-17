@@ -42,6 +42,39 @@ ZAP_JVM_OPTS="-Xmx512m"
 
 FRONTEND_URL="http://localhost:5173"
 BACKEND_URL="http://localhost:5001"
+GENERATED_DIR="$ZAP_DIR/generated"
+TOKENS_FILE="$GENERATED_DIR/tokens.json"
+
+ZAP_PASSWORD="ZapTest123!"
+ZAP_USER_ADMIN_PREFIX="zap_admin"
+ZAP_USER_COACH_PREFIX="zap_coach"
+ZAP_USER_COURTOWNER_PREFIX="zap_courtowner"
+ZAP_USER_SHOPOWNER_PREFIX="zap_shopowner"
+
+ZAP_USER_ADMIN=""
+ZAP_USER_COACH=""
+ZAP_USER_COURTOWNER=""
+ZAP_USER_SHOPOWNER=""
+
+ZAP_TOKEN_ADMIN=""
+ZAP_TOKEN_COACH=""
+ZAP_TOKEN_COURTOWNER=""
+ZAP_TOKEN_SHOPOWNER=""
+
+ZAP_FIXTURE_USER_MONGO_ID=""
+ZAP_FIXTURE_USER_FIREBASE_UID_PREFIX="zap-user-fixture"
+ZAP_FIXTURE_USER_FIREBASE_UID=""
+ZAP_FIXTURE_COURT_ID=""
+ZAP_FIXTURE_COACH_ID=""
+ZAP_FIXTURE_COACH_SLOT_ID=""
+ZAP_FIXTURE_COURT_SLOT_ID=""
+ZAP_FIXTURE_SHOP_ID=""
+ZAP_FIXTURE_CATEGORY_ID=""
+ZAP_FIXTURE_ITEM_ID=""
+ZAP_FIXTURE_MATCH_ID=""
+ZAP_FIXTURE_COACH_BOOKING_ID=""
+ZAP_FIXTURE_COURT_BOOKING_ID=""
+ZAP_DYNAMIC_BACKEND_REQUESTS=""
 
 # Docker target URLs (host.docker.internal for macOS, localhost for Linux)
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -54,6 +87,14 @@ fi
 
 # Timestamp for report filenames
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+RUN_ID="$TIMESTAMP"
+
+ZAP_USER_ADMIN="${ZAP_USER_ADMIN_PREFIX}_${RUN_ID}"
+ZAP_USER_COACH="${ZAP_USER_COACH_PREFIX}_${RUN_ID}"
+ZAP_USER_COURTOWNER="${ZAP_USER_COURTOWNER_PREFIX}_${RUN_ID}"
+ZAP_USER_SHOPOWNER="${ZAP_USER_SHOPOWNER_PREFIX}_${RUN_ID}"
+
+ZAP_FIXTURE_USER_FIREBASE_UID="${ZAP_FIXTURE_USER_FIREBASE_UID_PREFIX}-${RUN_ID}"
 
 # Track elapsed time
 SCAN_START_TIME=$(date +%s)
@@ -137,7 +178,410 @@ pull_zap_image() {
 
 create_reports_dir() {
     mkdir -p "$REPORTS_DIR"
+    mkdir -p "$GENERATED_DIR"
     echo -e "${GREEN}✓ Reports directory ready: $REPORTS_DIR${NC}"
+}
+
+load_cached_tokens() {
+    if [ ! -f "$TOKENS_FILE" ]; then
+        return 0
+    fi
+
+    python3 - <<'PY' "$TOKENS_FILE"
+import base64
+import json
+import sys
+import time
+
+path = sys.argv[1]
+try:
+    data = json.load(open(path))
+except Exception:
+    raise SystemExit(0)
+
+def jwt_exp(token: str) -> int:
+    try:
+        parts = token.split('.')
+        if len(parts) < 2:
+            return 0
+        payload_b64 = parts[1]
+        pad = '=' * (-len(payload_b64) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64 + pad))
+        return int(payload.get('exp') or 0)
+    except Exception:
+        return 0
+
+now = int(time.time())
+min_valid = now + 60
+
+out = {}
+for key in ["admin", "coach", "courtowner", "shopowner"]:
+    tok = (data.get(key) or "").strip()
+    if tok and jwt_exp(tok) >= min_valid:
+        out[key] = tok
+
+print(f'ZAP_TOKEN_ADMIN={out.get("admin", "")}')
+print(f'ZAP_TOKEN_COACH={out.get("coach", "")}')
+print(f'ZAP_TOKEN_COURTOWNER={out.get("courtowner", "")}')
+print(f'ZAP_TOKEN_SHOPOWNER={out.get("shopowner", "")}')
+PY
+}
+
+save_tokens() {
+    python3 - <<'PY' "$TOKENS_FILE" "$ZAP_TOKEN_ADMIN" "$ZAP_TOKEN_COACH" "$ZAP_TOKEN_COURTOWNER" "$ZAP_TOKEN_SHOPOWNER"
+import json
+import sys
+import time
+
+path = sys.argv[1]
+data = {
+  "savedAt": int(time.time()),
+  "admin": sys.argv[2],
+  "coach": sys.argv[3],
+  "courtowner": sys.argv[4],
+  "shopowner": sys.argv[5],
+}
+json.dump(data, open(path, 'w'), indent=2)
+PY
+}
+
+extract_token() {
+    local payload="$1"
+    python3 - <<'PY' "$payload"
+import json
+import sys
+
+raw = sys.argv[1]
+try:
+    data = json.loads(raw)
+except Exception:
+    print("")
+    raise SystemExit(0)
+
+token = ((data.get("data") or {}).get("token")) or ""
+print(token)
+PY
+}
+
+json_get() {
+    local payload="$1"
+    local path="$2"
+    python3 - <<'PY' "$payload" "$path"
+import json
+import re
+import sys
+
+raw = sys.argv[1]
+path = sys.argv[2]
+
+try:
+    data = json.loads(raw)
+except Exception:
+    print("")
+    raise SystemExit(0)
+
+parts = path.split('.')
+cur = data
+
+for part in parts:
+    m = re.match(r'^([^\[]+)(?:\[(\d+)\])?$', part)
+    if not m:
+        cur = None
+        break
+    key = m.group(1)
+    idx = m.group(2)
+
+    if not isinstance(cur, dict) or key not in cur:
+        cur = None
+        break
+
+    cur = cur[key]
+    if idx is not None:
+        if not isinstance(cur, list):
+            cur = None
+            break
+        i = int(idx)
+        if i < 0 or i >= len(cur):
+            cur = None
+            break
+        cur = cur[i]
+
+if cur is None:
+    print("")
+elif isinstance(cur, (dict, list)):
+    print("")
+else:
+    print(cur)
+PY
+}
+
+post_json() {
+    local url="$1"
+    local payload="$2"
+    curl -s -X POST "$url" -H "Content-Type: application/json" -d "$payload" || true
+}
+
+put_json() {
+    local url="$1"
+    local payload="$2"
+    curl -s -X PUT "$url" -H "Content-Type: application/json" -d "$payload" || true
+}
+
+patch_json() {
+    local url="$1"
+    local payload="$2"
+    curl -s -X PATCH "$url" -H "Content-Type: application/json" -d "$payload" || true
+}
+
+register_test_user() {
+    local username=$1
+    local role=$2
+    local email=$3
+
+    curl -s -X POST "$BACKEND_URL/api/auth/register" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"$username\",\"password\":\"$ZAP_PASSWORD\",\"role\":\"$role\",\"email\":\"$email\"}" \
+        > /dev/null 2>&1 || true
+}
+
+login_test_user() {
+    local username=$1
+    local response
+    response=$(curl -s -X POST "$BACKEND_URL/api/auth/login" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"$username\",\"password\":\"$ZAP_PASSWORD\"}" || true)
+
+    extract_token "$response"
+}
+
+prepare_auth_tokens() {
+    # Try to reuse valid tokens (prevents hitting the 5-per-15min login limiter on reruns)
+    local cached
+    cached=$(load_cached_tokens || true)
+    if [ -n "$cached" ]; then
+        eval "$cached"
+    fi
+
+    if ! check_service "$BACKEND_URL" "Backend API" > /dev/null; then
+        echo -e "${YELLOW}⚠ Backend is not available, skipping auth token preparation${NC}"
+        return 0
+    fi
+
+    echo -e "${BLUE}Preparing auth users/tokens for protected endpoint scans...${NC}"
+
+    register_test_user "$ZAP_USER_ADMIN" "admin" "$ZAP_USER_ADMIN@example.com"
+    register_test_user "$ZAP_USER_COACH" "coach" "$ZAP_USER_COACH@example.com"
+    register_test_user "$ZAP_USER_COURTOWNER" "courtowner" "$ZAP_USER_COURTOWNER@example.com"
+    register_test_user "$ZAP_USER_SHOPOWNER" "shopowner" "$ZAP_USER_SHOPOWNER@example.com"
+
+    if [[ -z "$ZAP_TOKEN_ADMIN" ]]; then
+        ZAP_TOKEN_ADMIN=$(login_test_user "$ZAP_USER_ADMIN")
+    fi
+    if [[ -z "$ZAP_TOKEN_COACH" ]]; then
+        ZAP_TOKEN_COACH=$(login_test_user "$ZAP_USER_COACH")
+    fi
+    if [[ -z "$ZAP_TOKEN_COURTOWNER" ]]; then
+        ZAP_TOKEN_COURTOWNER=$(login_test_user "$ZAP_USER_COURTOWNER")
+    fi
+    if [[ -z "$ZAP_TOKEN_SHOPOWNER" ]]; then
+        ZAP_TOKEN_SHOPOWNER=$(login_test_user "$ZAP_USER_SHOPOWNER")
+    fi
+
+    [[ -z "$ZAP_TOKEN_ADMIN" ]] && echo -e "${YELLOW}⚠ Could not obtain admin token${NC}"
+    [[ -z "$ZAP_TOKEN_COACH" ]] && echo -e "${YELLOW}⚠ Could not obtain coach token${NC}"
+    [[ -z "$ZAP_TOKEN_COURTOWNER" ]] && echo -e "${YELLOW}⚠ Could not obtain courtowner token${NC}"
+    [[ -z "$ZAP_TOKEN_SHOPOWNER" ]] && echo -e "${YELLOW}⚠ Could not obtain shopowner token${NC}"
+
+    # Persist tokens (even partial) for the next run.
+    save_tokens || true
+}
+
+prepare_scan_fixtures() {
+        if ! check_service "$BACKEND_URL" "Backend API" > /dev/null; then
+                echo -e "${YELLOW}⚠ Backend is not available, skipping fixture preparation${NC}"
+                return 0
+        fi
+
+        echo -e "${BLUE}Preparing fixture data for deep endpoint coverage...${NC}"
+
+        local court_resp
+        court_resp=$(post_json "$BACKEND_URL/api/courts" '{"CourtPhoto":"https://example.com/court.png","CourtName":"ZAP Court","Tel":"0771234567","place":"Colombo","Directions":[{"latitude":"6.9271","longitude":"79.8612"}],"Priceperhour":1500,"Openinghours":"08:00-20:00"}')
+        ZAP_FIXTURE_COURT_ID=$(json_get "$court_resp" "court._id")
+
+        if [[ -z "$ZAP_FIXTURE_COURT_ID" ]]; then
+                local courts_resp
+                courts_resp=$(curl -s "$BACKEND_URL/api/courts" || true)
+                ZAP_FIXTURE_COURT_ID=$(json_get "$courts_resp" "courts[0]._id")
+        fi
+
+        local coach_resp
+        coach_resp=$(post_json "$BACKEND_URL/api/coachers" "{\"CoachPhoto\":\"https://example.com/coach.png\",\"CoachName\":\"ZAP Coach\",\"Tel\":\"0771234568\",\"TrainingType\":[\"Singles\"],\"Certifications\":\"Level 1\",\"Courts\":[\"$ZAP_FIXTURE_COURT_ID\"],\"Experiance\":3,\"hourlyRate\":2500}")
+        ZAP_FIXTURE_COACH_ID=$(json_get "$coach_resp" "coach._id")
+
+        if [[ -z "$ZAP_FIXTURE_COACH_ID" ]]; then
+                local coaches_resp
+                coaches_resp=$(curl -s "$BACKEND_URL/api/coachers" || true)
+                ZAP_FIXTURE_COACH_ID=$(json_get "$coaches_resp" "coachers[0]._id")
+        fi
+
+        local user_resp
+        user_resp=$(post_json "$BACKEND_URL/api/user" "{\"name\":\"ZAP User\",\"email\":\"zap-user-fixture-${RUN_ID}@example.com\",\"firebaseUid\":\"$ZAP_FIXTURE_USER_FIREBASE_UID\",\"password\":\"$ZAP_PASSWORD\",\"role\":\"user\"}")
+        ZAP_FIXTURE_USER_MONGO_ID=$(json_get "$user_resp" "_id")
+
+        if [[ -z "$ZAP_FIXTURE_USER_MONGO_ID" ]]; then
+                local user_get_resp
+                user_get_resp=$(curl -s "$BACKEND_URL/api/user/$ZAP_FIXTURE_USER_FIREBASE_UID" || true)
+                ZAP_FIXTURE_USER_MONGO_ID=$(json_get "$user_get_resp" "_id")
+        fi
+
+        local shop_resp
+        shop_resp=$(post_json "$BACKEND_URL/api/shops" '{"ShopPhoto":"https://example.com/shop.png","ShopName":"ZAP Shop","Tel":"0771234569","place":"Colombo","website":"https://example.com","brands":[{"name":"ZAP Brand","images":"https://example.com/brand.png"}]}' )
+        ZAP_FIXTURE_SHOP_ID=$(json_get "$shop_resp" "shop._id")
+
+        if [[ -z "$ZAP_FIXTURE_SHOP_ID" ]]; then
+                local shops_resp
+                shops_resp=$(curl -s "$BACKEND_URL/api/shops" || true)
+                ZAP_FIXTURE_SHOP_ID=$(json_get "$shops_resp" "shops[0]._id")
+        fi
+
+        if [[ -n "$ZAP_FIXTURE_SHOP_ID" ]]; then
+                local category_resp
+                category_resp=$(post_json "$BACKEND_URL/api/shops/$ZAP_FIXTURE_SHOP_ID/categories" '{"categoryName":"ZAP Category","priceRange":"1000-3000"}')
+                ZAP_FIXTURE_CATEGORY_ID=$(json_get "$category_resp" "shop.categories[0]._id")
+
+                if [[ -n "$ZAP_FIXTURE_CATEGORY_ID" ]]; then
+                        local item_resp
+                        item_resp=$(post_json "$BACKEND_URL/api/shops/shop/$ZAP_FIXTURE_SHOP_ID/categories/$ZAP_FIXTURE_CATEGORY_ID/items" "{\"itemphoto\":\"https://example.com/item.png\",\"name\":\"ZAP Racket\",\"price\":2000,\"color\":\"Black\",\"brand\":\"ZAP Brand\",\"features\":\"Light\",\"availableqty\":10,\"categoryId\":\"$ZAP_FIXTURE_CATEGORY_ID\"}")
+                        ZAP_FIXTURE_ITEM_ID=$(json_get "$item_resp" "shop.items[0]._id")
+                fi
+        fi
+
+        local match_resp
+        match_resp=$(post_json "$BACKEND_URL/api/matches" '{"MatchPhoto":"https://example.com/match.png","MatchName":"ZAP Match","StartDate":"2026-03-01","EndDate":"2026-03-02","Weblink":"https://example.com/match"}')
+        ZAP_FIXTURE_MATCH_ID=$(json_get "$match_resp" "match._id")
+
+        local coach_slot_resp
+        coach_slot_resp=$(post_json "$BACKEND_URL/api/coachers/$ZAP_FIXTURE_COACH_ID/availability" '{"dayOfWeek":1,"startTime":"09:00","endTime":"11:00","isRecurring":true}')
+        ZAP_FIXTURE_COACH_SLOT_ID=$(json_get "$coach_slot_resp" "data._id")
+
+        local court_slot_resp
+        court_slot_resp=$(post_json "$BACKEND_URL/api/courts/$ZAP_FIXTURE_COURT_ID/availability" '{"dayOfWeek":1,"startTime":"09:00","endTime":"11:00","isRecurring":true}')
+        ZAP_FIXTURE_COURT_SLOT_ID=$(json_get "$court_slot_resp" "data._id")
+
+        local coach_booking_resp
+        coach_booking_resp=$(post_json "$BACKEND_URL/api/coachers/$ZAP_FIXTURE_COACH_ID/bookings" "{\"date\":\"2026-02-23\",\"startTime\":\"09:00\",\"endTime\":\"10:00\",\"userId\":\"$ZAP_FIXTURE_USER_MONGO_ID\",\"courtId\":\"$ZAP_FIXTURE_COURT_ID\",\"notes\":\"zap\"}")
+        ZAP_FIXTURE_COACH_BOOKING_ID=$(json_get "$coach_booking_resp" "data._id")
+
+        local court_booking_resp
+        court_booking_resp=$(post_json "$BACKEND_URL/api/courts/$ZAP_FIXTURE_COURT_ID/bookings" "{\"date\":\"2026-02-23\",\"startTime\":\"10:00\",\"endTime\":\"11:00\",\"userId\":\"$ZAP_FIXTURE_USER_MONGO_ID\",\"notes\":\"zap\"}")
+        ZAP_FIXTURE_COURT_BOOKING_ID=$(json_get "$court_booking_resp" "data._id")
+
+                ZAP_DYNAMIC_BACKEND_REQUESTS=$(cat <<EOF
+- url: "http://host.docker.internal:5001/api/coachers/$ZAP_FIXTURE_COACH_ID"
+  method: "GET"
+- url: "http://host.docker.internal:5001/api/coachers/$ZAP_FIXTURE_COACH_ID"
+  method: "PUT"
+  data: '{"CoachName":"ZAP Coach Updated"}'
+- url: "http://host.docker.internal:5001/api/coachers/$ZAP_FIXTURE_COACH_ID/availability"
+  method: "GET"
+- url: "http://host.docker.internal:5001/api/coachers/$ZAP_FIXTURE_COACH_ID/availability/$ZAP_FIXTURE_COACH_SLOT_ID"
+  method: "PUT"
+  data: '{"startTime":"10:00","endTime":"12:00"}'
+- url: "http://host.docker.internal:5001/api/coachers/$ZAP_FIXTURE_COACH_ID/check-availability"
+  method: "POST"
+  data: '{"date":"2026-02-23","startTime":"09:00","endTime":"10:00"}'
+- url: "http://host.docker.internal:5001/api/coachers/$ZAP_FIXTURE_COACH_ID/bookings/$ZAP_FIXTURE_COACH_BOOKING_ID"
+  method: "GET"
+- url: "http://host.docker.internal:5001/api/coachers/$ZAP_FIXTURE_COACH_ID/bookings/$ZAP_FIXTURE_COACH_BOOKING_ID/status"
+  method: "PATCH"
+  data: '{"status":"confirmed"}'
+
+- url: "http://host.docker.internal:5001/api/courts/$ZAP_FIXTURE_COURT_ID/availability"
+  method: "GET"
+- url: "http://host.docker.internal:5001/api/courts/$ZAP_FIXTURE_COURT_ID/availability/$ZAP_FIXTURE_COURT_SLOT_ID"
+  method: "PUT"
+  data: '{"startTime":"10:00","endTime":"12:00"}'
+- url: "http://host.docker.internal:5001/api/courts/$ZAP_FIXTURE_COURT_ID/check-availability"
+  method: "POST"
+  data: '{"date":"2026-02-23","startTime":"10:00","endTime":"11:00"}'
+- url: "http://host.docker.internal:5001/api/courts/$ZAP_FIXTURE_COURT_ID/bookings/$ZAP_FIXTURE_COURT_BOOKING_ID"
+  method: "GET"
+- url: "http://host.docker.internal:5001/api/courts/$ZAP_FIXTURE_COURT_ID/bookings/$ZAP_FIXTURE_COURT_BOOKING_ID/status"
+  method: "PATCH"
+  data: '{"status":"confirmed"}'
+
+- url: "http://host.docker.internal:5001/api/shops/shop/$ZAP_FIXTURE_SHOP_ID"
+  method: "GET"
+- url: "http://host.docker.internal:5001/api/shops/shop/$ZAP_FIXTURE_SHOP_ID"
+  method: "PUT"
+  data: '{"ShopName":"ZAP Shop Updated"}'
+- url: "http://host.docker.internal:5001/api/items/shop/$ZAP_FIXTURE_SHOP_ID"
+  method: "GET"
+- url: "http://host.docker.internal:5001/api/items/category/$ZAP_FIXTURE_CATEGORY_ID"
+  method: "GET"
+- url: "http://host.docker.internal:5001/api/items/$ZAP_FIXTURE_ITEM_ID"
+  method: "GET"
+
+- url: "http://host.docker.internal:5001/api/matches/match/$ZAP_FIXTURE_MATCH_ID"
+  method: "PUT"
+  data: '{"MatchName":"ZAP Match Updated"}'
+
+- url: "http://host.docker.internal:5001/api/user/$ZAP_FIXTURE_USER_FIREBASE_UID"
+  method: "GET"
+- url: "http://host.docker.internal:5001/api/user/$ZAP_FIXTURE_USER_FIREBASE_UID"
+  method: "PUT"
+  data: '{"name":"ZAP User Updated"}'
+
+- url: "http://host.docker.internal:5001/api/payment/payments/user/$ZAP_FIXTURE_USER_MONGO_ID"
+  method: "GET"
+EOF
+)
+
+        echo -e "${GREEN}✓ Fixture preparation complete (court: ${ZAP_FIXTURE_COURT_ID:-n/a}, coach: ${ZAP_FIXTURE_COACH_ID:-n/a}, shop: ${ZAP_FIXTURE_SHOP_ID:-n/a})${NC}"
+}
+
+render_scan_config() {
+    local source_file=$1
+    local output_file=$2
+
+    python3 - <<'PY' "$source_file" "$output_file" "$ZAP_TOKEN_ADMIN" "$ZAP_TOKEN_COACH" "$ZAP_TOKEN_COURTOWNER" "$ZAP_TOKEN_SHOPOWNER" "$ZAP_DYNAMIC_BACKEND_REQUESTS"
+import pathlib
+import re
+import sys
+
+source = pathlib.Path(sys.argv[1])
+target = pathlib.Path(sys.argv[2])
+
+admin = sys.argv[3] or "zap-missing-admin-token"
+coach = sys.argv[4] or "zap-missing-coach-token"
+courtowner = sys.argv[5] or "zap-missing-courtowner-token"
+shopowner = sys.argv[6] or "zap-missing-shopowner-token"
+dynamic_requests = sys.argv[7] if len(sys.argv) > 7 else ""
+
+content = source.read_text()
+content = content.replace("__ZAP_TOKEN_ADMIN__", admin)
+content = content.replace("__ZAP_TOKEN_COACH__", coach)
+content = content.replace("__ZAP_TOKEN_COURTOWNER__", courtowner)
+content = content.replace("__ZAP_TOKEN_SHOPOWNER__", shopowner)
+
+# Replace the entire marker line, preserving YAML indentation.
+marker = "# __ZAP_DYNAMIC_BACKEND_REQUESTS__"
+lines_out = []
+for line in content.splitlines(True):
+    if marker in line:
+        indent = re.match(r"^(\s*)", line).group(1)
+        dyn = dynamic_requests.strip("\n")
+        if dyn:
+            for dyn_line in dyn.splitlines():
+                lines_out.append(indent + dyn_line + "\n")
+        # omit the marker line itself
+        continue
+    lines_out.append(line)
+
+content = "".join(lines_out)
+
+target.write_text(content)
+PY
 }
 
 validate_expected_reports() {
@@ -190,15 +634,22 @@ run_frontend_scan() {
     step_timer_start
     local frontend_log="$REPORTS_DIR/frontend-scan-log-${TIMESTAMP}.txt"
 
-    if ! docker run --rm \
+    local frontend_config_rel="generated/frontend-scan-${TIMESTAMP}.yaml"
+    local frontend_config_abs="$ZAP_DIR/$frontend_config_rel"
+    render_scan_config "$ZAP_DIR/frontend-scan.yaml" "$frontend_config_abs"
+
+    set +e
+    docker run --rm \
         -v "$ZAP_DIR:/zap/wrk:rw" \
         $DOCKER_MEMORY \
         $DOCKER_NETWORK_FLAG \
         "$ZAP_IMAGE" \
-        zap.sh -cmd -Xmx512m -autorun /zap/wrk/frontend-scan.yaml \
-        2>&1 | while IFS= read -r line; do
-            echo -e "  ${BLUE}[$(step_elapsed)]${NC} $line"
-        done | tee "$frontend_log"; then
+        zap.sh -cmd -Xmx512m -autorun "/zap/wrk/$frontend_config_rel" \
+        2>&1 | tee "$frontend_log"
+    local frontend_exit_code=${PIPESTATUS[0]}
+    set -e
+
+    if [ "$frontend_exit_code" -ne 0 ]; then
         echo -e "${RED}ERROR: Frontend ZAP scan process failed before completion.${NC}"
         echo "Check log: $frontend_log"
         return 1
@@ -241,21 +692,34 @@ run_backend_scan() {
     step_timer_start
     local backend_log="$REPORTS_DIR/backend-scan-log-${TIMESTAMP}.txt"
 
-    if ! docker run --rm \
+    local backend_config_rel="generated/backend-scan-${TIMESTAMP}.yaml"
+    local backend_config_abs="$ZAP_DIR/$backend_config_rel"
+    render_scan_config "$ZAP_DIR/backend-scan.yaml" "$backend_config_abs"
+
+    set +e
+    docker run --rm \
         -v "$ZAP_DIR:/zap/wrk:rw" \
         $DOCKER_MEMORY \
         $DOCKER_NETWORK_FLAG \
         "$ZAP_IMAGE" \
-        zap.sh -cmd -Xmx512m -autorun /zap/wrk/backend-scan.yaml \
-        2>&1 | while IFS= read -r line; do
-            echo -e "  ${BLUE}[$(step_elapsed)]${NC} $line"
-        done | tee "$backend_log"; then
-        echo -e "${RED}ERROR: Backend ZAP scan process failed before completion.${NC}"
-        echo "Check log: $backend_log"
-        return 1
-    fi
+        zap.sh -cmd -Xmx512m -autorun "/zap/wrk/$backend_config_rel" \
+        2>&1 | tee "$backend_log"
+    local backend_exit_code=${PIPESTATUS[0]}
+    set -e
 
-    validate_expected_reports "Backend" "shuttlemate-backend-report" "$backend_log"
+    if [ "$backend_exit_code" -ne 0 ]; then
+        # ZAP can exit non-zero when the automation plan has warnings (e.g., a
+        # start URL returns 404) even if the scan ran and reports were generated.
+        if validate_expected_reports "Backend" "shuttlemate-backend-report" "$backend_log"; then
+            echo -e "${YELLOW}⚠ Backend ZAP exited with code $backend_exit_code, but reports were generated.${NC}"
+        else
+            echo -e "${RED}ERROR: Backend ZAP scan process failed before completion.${NC}"
+            echo "Check log: $backend_log"
+            return 1
+        fi
+    else
+        validate_expected_reports "Backend" "shuttlemate-backend-report" "$backend_log"
+    fi
 
     echo ""
     echo -e "${GREEN}✓ Backend scan complete! (took $(step_elapsed))${NC}"
@@ -359,6 +823,8 @@ echo -e "${YELLOW}   to prevent Docker from starving your system of memory.${NC}
 echo ""
 check_docker
 create_reports_dir
+prepare_auth_tokens
+prepare_scan_fixtures
 
 SCAN_TYPE="${1:-all}"
 

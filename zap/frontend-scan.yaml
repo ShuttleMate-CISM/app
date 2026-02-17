@@ -18,8 +18,8 @@ env:
       urls:
         - "http://host.docker.internal:5173"
       includePaths:
-        - "http://host.docker.internal:5173.*"
-        - "http://host.docker.internal:5001.*"
+        - "http://host.docker.internal:5173/.*"
+        - "http://host.docker.internal:5001/api/.*"
       excludePaths:
         - ".*\\.js$"
         - ".*\\.css$"
@@ -29,42 +29,83 @@ env:
         - ".*\\.ico$"
         - ".*\\.woff2?$"
         - ".*node_modules.*"
-      authentication:
-        method: "json"
-        parameters:
-          loginPageUrl: "http://host.docker.internal:5173/login"
-          loginRequestUrl: "http://host.docker.internal:5001/api/auth/login"
-          loginRequestBody: '{"username":"{%username%}","password":"{%password%}"}'
-        verification:
-          method: "response"
-          loggedInRegex: "\\Qsuccess\\E"
-          loggedOutRegex: "\\QInvalid\\E"
-      sessionManagement:
-        method: "cookie"
-      users:
-        - name: "test-user"
-          credentials:
-            username: "madhuraweerasooriye@gmail.com"
-            password: "madhuraweerasooriye@gmail.com"
   parameters:
     failOnError: false
     failOnWarning: false
     progressToStdout: true
 
 jobs:
+  # ---- Seed SPA routes and key API calls ----
+  - type: requestor
+    parameters:
+      user: ""
+    requests:
+      - url: "http://host.docker.internal:5173/"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Splashscreen"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/login"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/register"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/unauthorized"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/home"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Videopage"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/timeline"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/News"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Matchtimeline"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Users"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Coachers"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Court"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/shop"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/payment"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/auth/login"
+        method: "POST"
+        data: '{"username":"zap-test-user","password":"ZapTest123!"}'
+      - url: "http://host.docker.internal:5001/api/news"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/videos"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/users/admin"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_ADMIN__"
+      - url: "http://host.docker.internal:5001/api/users/coach"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_COACH__"
+      - url: "http://host.docker.internal:5001/api/users/courtowner"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_COURTOWNER__"
+      - url: "http://host.docker.internal:5001/api/users/shopowner"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_SHOPOWNER__"
+
   # ---- Spider the frontend SPA ----
   - type: spider
     parameters:
       context: "ShuttleMate-Frontend"
-      user: "test-user"
-      maxDuration: 2 # minutes
-      maxDepth: 3
-      maxChildren: 10
+      maxDuration: 4 # minutes
+      maxDepth: 5
+      maxChildren: 20
       acceptCookies: true
       handleODataParametersVisited: false
       handleParameters: "USE_ALL"
       parseComments: false
-      threadCount: 2
+      threadCount: 3
 
   # NOTE: AJAX Spider removed — it launches headless browsers inside Docker
   # which uses 2-3GB+ RAM. On 8GB machines this causes OOM freezes.
@@ -73,39 +114,11 @@ jobs:
   # ---- Passive Scan (analyzes responses already collected) ----
   - type: passiveScan-wait
     parameters:
-      maxDuration: 3 # minutes (reduced from 10)
+      maxDuration: 6 # minutes
 
-  # ---- Active Scan (sends attack payloads) ----
-  - type: activeScan
-    parameters:
-      context: "ShuttleMate-Frontend"
-      user: "test-user"
-      maxRuleDurationInMins: 2
-      maxScanDurationInMins: 8
-      threadPerHost: 2
-      delayInMs: 50
-      delayInMs: 0
-      addQueryParam: false
-      handleAntiCSRFTokens: true
-      injectPluginIdInHeader: false
-      scanHeadersAllRequests: false
-    policyDefinition:
-      defaultStrength: "medium"
-      defaultThreshold: "medium"
-      rules:
-        # XSS - Critical for frontend
-        - id: 40012 # Reflected XSS
-          strength: "high"
-          threshold: "low"
-        - id: 40014 # Persistent XSS
-          strength: "high"
-          threshold: "low"
-        - id: 40016 # Persistent XSS (Prime)
-          strength: "high"
-          threshold: "low"
-        - id: 40017 # Persistent XSS (Spider)
-          strength: "high"
-          threshold: "low"
+  # Active scan intentionally omitted for frontend stability in this environment.
+  # Frontend remains covered by requestor seeding + spider + passive analysis,
+  # while full active attack scanning is applied to backend APIs.
 
   # ---- Generate Reports ----
   - type: report

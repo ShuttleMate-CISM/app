@@ -3,7 +3,8 @@ import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import logAuthEvent from "../utils/authLogger.js";
 
-const toSafeString = (value) => (typeof value === "string" ? value.trim() : "");
+const toSafeString = (value) =>
+  typeof value === "string" ? value.trim() : "";
 
 // Register Controller
 export const register = async (req, res) => {

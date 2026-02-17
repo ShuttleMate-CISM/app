@@ -2,3 +2,10 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* Background image utility classes */
+.bg-auth-page {
+  background-image: url('./assets/Images/Bg.png');
+  background-position: center;
+  background-size: cover;
+}
+

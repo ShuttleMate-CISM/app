@@ -6,100 +6,76 @@ import admin from '../firebase/firebaseAdmin.js';
 
 
 export const createcourt = async (req, res, next) => {
+  try {
+    // Whitelist and validate required fields
+    const allowedFields = ['CourtPhoto', 'CourtName', 'Tel', 'place', 'Directions', 'Priceperhour', 'Openinghours'];
+    const courtData = {};
     
-    const { CourtPhoto, CourtName, Tel, place, Directions, Priceperhour, Openinghours } = req.body;
-   
-    try {
-      
-      if (!CourtName) {
-        return res.status(400).json({
-          success: false,
-          message: "Court name is required"
-        });
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        courtData[field] = String(req.body[field]).trim();
       }
-
-      const court = await Courts.create({
-        CourtPhoto,
-        CourtName,
-        Tel,
-        place,
-        Directions,
-        Priceperhour,
-        Openinghours
-      });
-
-
-      try {
-        const tokens = getRegisteredTokens();
-
-        if (tokens && tokens.length > 0) {
-          const message = {
-            notification: {
-              title: 'New Court Added!',
-              body: `A new court has been added: ${court.CourtName || 'Check it out!'}`,
-            },
-            data: {
-              screen: 'court',
-              courtId: court._id.toString(),
-              type: 'new_court'
-            },
-          };
-
-          const notifications = tokens.map(async (token) => {
-            try {
-              const result = await admin.messaging().send({
-                ...message,
-                token,
-              });
-              return result;
-            } catch (error) {
-              console.error(`Failed to send notification to token ${token.substring(0, 10)}...:`, error.message);
-              return null;
-            }
-          });
-          const successful = results.filter(result => result.status === 'fulfilled' && result.value).length;
-          const failed = results.length - successful;
-          
-        } else {
-          console.log('No registered tokens found for notifications');
-        }
-      } catch (notificationError) {
-       
-        console.error('Error sending notifications:', notificationError);
-      }
-      
-      res.status(201).json({
-        success: true,
-        court,
-        message: "Court created successfully"
-      });
-      
-    } catch (error) {
-      console.error("Error creating court:", error);
-      
-      if (error.code === 11000) {
-        return res.status(400).json({
-          success: false,
-          message: "A court with this information already exists"
-        });
-      }
-      
-      if (error.name === 'ValidationError') {
-        const validationErrors = Object.values(error.errors).map(err => err.message);
-        return res.status(400).json({
-          success: false,
-          message: "Validation failed",
-          errors: validationErrors
-        });
-      }
-      
-      res.status(500).json({
+    });
+    
+    // Validate required fields
+    if (!courtData.CourtName) {
+      return res.status(400).json({
         success: false,
-        message: "Failed to create court",
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        message: "Court name is required"
       });
-      next(error);
     }
+
+    const court = await Courts.create(courtData);
+
+    try {
+      const tokens = getRegisteredTokens();
+
+      if (tokens && tokens.length > 0) {
+        const message = {
+          notification: {
+            title: 'New Court Added!',
+            body: `A new court has been added: ${court.CourtName || 'Check it out!'}`,
+          },
+          data: {
+            screen: 'court',
+            courtId: court._id.toString(),
+            type: 'new_court'
+          },
+        };
+
+        const notifications = tokens.map(async (token) => {
+          try {
+            const result = await admin.messaging().send({
+              ...message,
+              token,
+            });
+            return result;
+          } catch (error) {
+            console.error(`Failed to send notification to token ${token.substring(0, 10)}...:`, error.message);
+            return null;
+          }
+        });
+        const successful = results.filter(result => result.status === 'fulfilled' && result.value).length;
+        const failed = results.length - successful;
+        
+      } else {
+        console.log('No registered tokens found for notifications');
+      }
+      
+    } catch (notificationError) {
+      
+      console.error('Error sending notifications:', notificationError);
+    }
+      
+    res.status(201).json({
+      success: true,
+      court,
+      message: "Court created successfully"
+    });
+      
+  } catch (error) {
+    next(error);
+  }
 };
   
 

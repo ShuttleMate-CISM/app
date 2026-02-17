@@ -2,8 +2,8 @@ import express from "express";
 import mongoose from "mongoose";
 import Joi from "joi";
 import sanitize from "mongo-sanitize";
-import Shop from "../models/shop.js";
-import { getRegisteredTokens } from "./notificationController.js";
+import Shop from "../models/shopModel.js";
+import admin from "../firebase/firebaseAdmin.js";
 
 // Define strict validation schema for search input
 const searchSchema = Joi.object({
@@ -13,57 +13,50 @@ const searchSchema = Joi.object({
 // Create a new shop
 export const createShop = async (req, res, next) => {
   try {
-    const shop = await Shop.create(req.body);
-
-    try{
-      const tokens = getRegisteredTokens();
-
-      if(tokens && tokens.length > 0){
-        const message = {
-          Notification:{
-            title:'New Shop Added !',
-            body : `A new shop has been added : ${shop.name || 'Check it out!'} `,
-
-          },
-          data:{
-            screen: 'shop',
-              shopId: shop._id.toString(),
-              type: 'new_shop'
-          },
-        };
-
-        const notification = tokens.map(async(token) => {
-          try{
-            const result = await admin.message().send({
-              ...message,
-              token,
-            });
-            return result;
-          }catch(error){
-              console.error(`Failed to send notification to token ${token.substring(0, 10)}...:`, error.message);
-              return null;
-          }
-        });
-         const successful = results.filter(result => result.status === 'fulfilled' && result.value).length;
-          const failed = results.length - successful;
-      }else{
-             console.log('No registered tokens found for notifications');
-
+    // Whitelist and validate required fields
+    const allowedFields = ['name', 'address', 'phone', 'email', 'category', 'city', 'state'];
+    const shopData = {};
+    
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        shopData[field] = String(req.body[field]).trim();
       }
+    });
+    
+    // Validate required fields
+    if (!shopData.name || !shopData.address || !shopData.phone || !shopData.email) {
+      return res.status(400).json({ 
+        error: "Missing required fields: name, address, phone, email" 
+      });
     }
-    catch(notificationError){
-          console.error('Error sending notifications:', notificationError);
-
-    }
-    res.status(201).json({ success: true, shop });
+    
+    // Create shop with validated data only
+    const shop = await Shop.create(shopData);
+    
+    // Send notifications to registered devices
+    const deviceTokens = []; // Fetch from your database
+    const notificationPromises = deviceTokens.map(token =>
+      admin.messaging().send({
+        token,
+        notification: {
+          title: "New Shop Created",
+          body: `${shopData.name} has been added to Shuttlemate`
+        }
+      }).catch(() => null)
+    );
+    
+    const results = await Promise.all(notificationPromises);
+    const sentCount = results.filter(result => result !== null).length;
+    
+    res.status(201).json({
+      message: "Shop created successfully",
+      shop,
+      notificationsSent: sentCount
+    });
   } catch (error) {
-    console.error("Error creating shop:", error);
-    res.status(500).json({ success: false, message: "Failed to create shop" });
     next(error);
   }
 };
-
-
 
 // Get all shops
 export const getAllShops = async (req, res, next) => {

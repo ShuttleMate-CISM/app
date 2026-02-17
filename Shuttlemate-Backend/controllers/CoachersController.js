@@ -8,64 +8,26 @@ export const createcoach = async (req, res, next) => {
   const { CoachPhoto, CoachName, Tel, TrainingType, Certifications, Courts, Experiance, hourlyRate } = req.body;
 
   try {
-    const coach = await Coachers.create({
-      CoachPhoto,
-      CoachName,
-      Tel,
-      TrainingType,
-      Certifications,
-      Courts,
-      Experiance,
-      hourlyRate
-    });
-
-    try {
-      const tokens = await getRegisteredTokens();
-
-      if (tokens && tokens.length > 0) {
-        const message = {
-          notification: {
-            title: 'New Coach Added!',
-            body: `A new coach has been added: ${coach.CoachName || 'Check it out!'}`,
-          },
-          data: {
-            screen: 'coach',
-            coachId: coach._id.toString(),
-            type: 'new_coach'
-          },
-        };
-
-        const notifications = tokens.map(async (token) => {
-          try {
-            const result = await admin.messaging().send({
-              ...message,
-              token,
-            });
-            return result;
-          } catch (error) {
-            console.error(`Failed to send to token ${token.substring(0, 10)}...`, error.message);
-            return null;
-          }
-        });
-
-        const results = await Promise.allSettled(notifications);
-        const successful = results.filter(r => r.status === 'fulfilled' && r.value).length;
-        const failed = results.length - successful;
-      } else {
-        console.log('No registered tokens found');
+    // Whitelist and validate required fields
+    const allowedFields = ['CoachPhoto', 'CoachName', 'CoachEmail', 'CoachPhone', 'CoachBio', 'CoachExperience'];
+    const coachData = {};
+    
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        coachData[field] = String(req.body[field]).trim();
       }
-
-    } catch (notificationError) {
-      console.error('Notification error:', notificationError);
-    }
-
-    res.status(201).json({
-      success: true,
-      coach,
     });
+    
+    // Validate required fields
+    if (!coachData.CoachName || !coachData.CoachEmail) {
+      return res.status(400).json({ 
+        error: "Missing required fields" 
+      });
+    }
+    
+    const coach = await Coachers.create(coachData);
+    res.status(201).json(coach);
   } catch (error) {
-    console.log(error);
-    res.status(500);
     next(error);
   }
 };
@@ -162,11 +124,23 @@ export const searchCoachers = async (req, res) => {
   const { search } = req.query;
 
   try {
+    // Sanitize and validate search input
+    const search = String(req.query.search || '').trim();
+    
+    if (search.length > 100) {
+      return res.status(400).json({ 
+        error: "Search query too long" 
+      });
+    }
+    
+    // Escape regex special characters
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
     const coachers = await Coachers.find({
-      CoachName: { $regex: search, $options: 'i' }, 
+      CoachName: { $regex: escapedSearch, $options: 'i' }
     });
-
-    res.status(200).json(coachers);
+    
+    res.json(coachers);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

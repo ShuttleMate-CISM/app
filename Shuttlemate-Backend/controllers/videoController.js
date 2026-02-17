@@ -8,6 +8,23 @@ export const createVideo = async (req, res, next) => {
   
 //create video
   try {
+    // Whitelist and validate required fields
+    const allowedFields = ['name', 'address', 'phone', 'email', 'category', 'city', 'state'];
+    const shopData = {};
+  
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        shopData[field] = String(req.body[field]).trim();
+      }
+    });
+  
+    // Validate required fields
+    if (!shopData.name || !shopData.address || !shopData.phone || !shopData.email) {
+      return res.status(400).json({ 
+        error: "Missing required fields: name, address, phone, email" 
+      });
+    }
+    
     const video = await Video.create({
       imgUrl,
       videoUrl,
@@ -93,11 +110,23 @@ export const searchVideos = async (req, res) => {
   const { search } = req.query;
 
   try {
-    const videos = await Video.find({
-      videoName: { $regex: search, $options: 'i' }, // case-insensitive
+    // Sanitize and validate search input
+    const search = String(req.query.search || '').trim();
+  
+    if (search.length > 100) {
+      return res.status(400).json({ 
+        error: "Search query too long" 
+      });
+    }
+  
+    // Escape regex special characters
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+    const results = await Video.find({
+      videoName: { $regex: escapedSearch, $options: 'i' }
     });
-
-    res.status(200).json(videos);
+  
+    res.json(results);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

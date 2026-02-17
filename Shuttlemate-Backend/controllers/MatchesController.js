@@ -9,7 +9,25 @@ const router = express.Router();
 // CREATE a new match
 export const createMatch = async (req, res, next) => {
   try {
-    const newMatch = await Matches.create(req.body);
+    // Whitelist and validate required fields
+    const allowedFields = ['court', 'player1', 'player2', 'matchDate', 'matchTime', 'duration', 'score', 'status'];
+    const matchData = {};
+    
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        matchData[field] = String(req.body[field]).trim();
+      }
+    });
+    
+    // Validate required fields
+    if (!matchData.court || !matchData.player1 || !matchData.player2 || !matchData.matchDate) {
+      return res.status(400).json({ 
+        error: "Missing required fields: court, player1, player2, matchDate" 
+      });
+    }
+    
+    // Create match with validated data only
+    const newMatch = await Matches.create(matchData);
     
     const tokens = getRegisteredTokens();
     
@@ -49,10 +67,12 @@ export const createMatch = async (req, res, next) => {
       console.log('No registered tokens found for notifications');
     }
 
-    res.status(201).json({ success: true, match: newMatch });
+    res.status(201).json({
+      success: true,
+      message: "Match created successfully",
+      match: newMatch
+    });
   } catch (error) {
-    console.error("Error creating match:", error);
-    res.status(500).json({ success: false, message: "Failed to create match" });
     next(error);
   }
 };

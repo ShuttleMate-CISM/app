@@ -20,6 +20,8 @@ import userRoutes from "./routes/userRoutes.js";
 import notificationRoutes from "./routes/Notification.js";
 import paymentRoutes from "./routes/payment.js";
 import NewsRoute from "./routes/news.js";
+import fs from "fs"; 
+import https from "https"; 
 
 // Express App
 const app = express();
@@ -27,7 +29,7 @@ const port = process.env.PORT || 5001;
 
 // CORS Configuration
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:3000"],
+  origin: ["http://localhost:5173", "http://localhost:3000", "https://localhost:5173", "https://localhost:5174"],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -38,6 +40,12 @@ app.use(helmet.hidePoweredBy());
 app.use(helmet.frameguard({ action: "deny" }));
 app.use(cors(corsOptions));
 app.use(express.json());
+
+app.use(helmet.hsts({
+  maxAge: 31536000,         
+  includeSubDomains: true,   
+  preload: true              
+}));
 
 // Routes
 app.use("/api/videos", videoRoutes);
@@ -57,8 +65,13 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/payment", paymentRoutes.default || paymentRoutes);
 app.use("/api/news", NewsRoute);
 
-app.listen(port, () => {
-  // connect to DB
+
+const sslOptions = {
+  key: fs.readFileSync('./ssl/server.key'),
+  cert: fs.readFileSync('./ssl/server.crt')
+};
+
+https.createServer(sslOptions, app).listen(port, () => {
   connectDB();
-  console.log("Server started listening on port", port);
+  console.log(`✅ Secure HTTPS server running on https://localhost:${port}`);
 });

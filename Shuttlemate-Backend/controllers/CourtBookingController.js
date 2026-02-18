@@ -487,6 +487,15 @@ export const updateBookingStatus = async (req, res) => {
       const { courtId, userId } = req.params;
       const { status } = req.query;
 
+
+      // --- SECURITY FIX: IDOR Protection  (vulnerability 04)---
+      // Authorization: only allow users to view their own bookings (or admins)
+      if (userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Not authorized to view these bookings' });
+      }
+      // --- END SECURITY FIX ---
+
+
       const court = await Court.findById(courtId);
       if (!court) {
         return res.status(404).json({ success: false, message: 'Court not found' });

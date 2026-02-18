@@ -139,10 +139,7 @@ const Login = () => {
   };
 
   return (
-    <div 
-      className="flex items-center justify-center h-screen bg-center bg-cover"
-      style={{ backgroundImage: `url(${images.Bg})` }}
-    >
+    <div className="flex items-center justify-center h-screen bg-auth-page">
       <div className="w-1/3">
         <div className="w-full p-8 bg-white rounded-lg shadow-md">
           <img 

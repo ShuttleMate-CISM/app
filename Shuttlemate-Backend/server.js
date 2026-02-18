@@ -33,6 +33,28 @@ const corsOptions = {
   exposedHeaders: ["Content-Range", "X-Content-Range"],
 };
 
+// Security Headers - Content Security Policy
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.gstatic.com",
+      "style-src 'self' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: https: blob:",
+      "connect-src 'self' http://localhost:5001 https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com",
+      "frame-src 'self' https://accounts.google.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests"
+    ].join('; ')
+  );
+  next();
+});
+
 // Middlewares
 app.use(cors(corsOptions));
 app.use(express.json());

@@ -96,8 +96,7 @@ const Register = () => {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-center bg-cover"
-         style={{ backgroundImage: `url(${images.Bg})` }}>
+    <div className="flex items-center justify-center h-screen bg-auth-page">
       <div className="w-full max-w-md p-8 bg-white rounded-md shadow-xl">
         <img src={images.BackArrow} className='w-5 h-5 cursor-pointer' onClick={Back} />
         <h2 className="mb-6 text-3xl font-bold text-center uppercase">Create an account</h2>

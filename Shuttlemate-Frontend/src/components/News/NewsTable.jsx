@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import DOMPurify from 'dompurify'; // XSS Sanitization (S6 - Frontend Security)
 import { Pencil, Trash2, Eye } from 'lucide-react';
 import DataTable from 'react-data-table-component';
 import EditNewsModal from './EditNewsModel';
@@ -18,7 +19,9 @@ const NewsTable = ({ news = [], onDelete, onUpdate }) => {
 
     const truncateText = (text, maxLength = 50) => {
         if (!text) return '';
-        return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+        // Sanitize user-generated content to prevent XSS attacks
+        const sanitized = DOMPurify.sanitize(text);
+        return sanitized.length > maxLength ? `${sanitized.substring(0, maxLength)}...` : sanitized;
     };
 
  

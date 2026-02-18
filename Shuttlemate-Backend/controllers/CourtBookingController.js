@@ -87,6 +87,19 @@ export const getBooking = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
+    // --- SECURITY FIX: IDOR Protection ---
+    // Check if the requester is the owner OR an admin
+    if (req.user && booking.userId) {
+      const bookingUserId = booking.userId._id ? booking.userId._id.toString() : booking.userId.toString();
+      if (bookingUserId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Security Alert: You are not authorized to view this booking.',
+        });
+      }
+    }
+    // --- END SECURITY FIX ---
+
     res.status(200).json({
       success: true,
       data: booking,
@@ -473,6 +486,15 @@ export const updateBookingStatus = async (req, res) => {
     try {
       const { courtId, userId } = req.params;
       const { status } = req.query;
+
+
+      // --- SECURITY FIX: IDOR Protection  (vulnerability 04)---
+      // Authorization: only allow users to view their own bookings (or admins)
+      if (userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Not authorized to view these bookings' });
+      }
+      // --- END SECURITY FIX ---
+
 
       const court = await Court.findById(courtId);
       if (!court) {

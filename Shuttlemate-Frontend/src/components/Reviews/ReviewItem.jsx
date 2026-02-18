@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import DOMPurify from 'dompurify';
 
 /**
@@ -51,6 +52,28 @@ const ReviewItem = ({ review }) => {
       )}
     </div>
   );
+};
+
+/**
+ * PropTypes for Type Safety
+ * 
+ * SECURITY & QUALITY BENEFIT:
+ * - Validates prop types at runtime (development mode)
+ * - Catches type mismatches before they cause crashes
+ * - Documents expected prop structure for developers
+ * - Provides IDE autocomplete and intellisense
+ * - Prevents accidental XSS by enforcing string types
+ */
+ReviewItem.propTypes = {
+  review: PropTypes.shape({
+    comment: PropTypes.string.isRequired,      // Must be string for DOMPurify
+    userName: PropTypes.string.isRequired,     // Must be string for DOMPurify
+    rating: PropTypes.number,                  // Optional, but must be number if provided
+    createdAt: PropTypes.oneOfType([           // Can be Date object or ISO string
+      PropTypes.instanceOf(Date),
+      PropTypes.string
+    ])
+  }).isRequired  // The review object itself is required
 };
 
 export default ReviewItem;

@@ -1,333 +1,376 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Calendar, Trash2, Edit3, Save, X, User, BookOpen, Check, XCircle, Eye, ChevronLeft } from 'lucide-react';
-import { set } from 'date-fns';
-import Swal from 'sweetalert2';
-
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Clock,
+  Calendar,
+  Trash2,
+  Edit3,
+  Save,
+  X,
+  User,
+  BookOpen,
+  Check,
+  XCircle,
+  Eye,
+  ChevronLeft,
+} from "lucide-react";
+import { set } from "date-fns";
+import Swal from "sweetalert2";
 
 const AvailableTime = ({ isOpen, courtId, courtName, onClose }) => {
-    const [availabilitySlots, setAvailabilitySlots] = useState([]);
-    const [bookings, setBookings] = useState([]);
-    const [isAddingNew, setIsAddingNew] = useState(false);
-    const [editingSlot, setEditingSlot] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [bookingsLoading, setBookingsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [activeView, setActiveView] = useState('availability');
+  const [availabilitySlots, setAvailabilitySlots] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [editingSlot, setEditingSlot] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [activeView, setActiveView] = useState("availability");
 
-    const [newSlot, setNewSlot] = useState({
-        dayOfWeek: 0,
-        startTime: '09:00',
-        endTime: '10:00',
-        isRecurring: true
-    });
+  const [newSlot, setNewSlot] = useState({
+    dayOfWeek: 0,
+    startTime: "09:00",
+    endTime: "10:00",
+    isRecurring: true,
+  });
 
-    const daysOfWeek = [
-        'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-    ];
+  const daysOfWeek = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
 
-    const timeSlots = [];
-    for (let hour = 0; hour < 24; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            timeSlots.push(timeString);
-        }
+  const timeSlots = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+      timeSlots.push(timeString);
     }
+  }
 
-    useEffect(() => {
-        if (isOpen && courtId) {
-            fetchAvailability();
-            if (activeView === 'bookings') {
-                fetchBookings();
-            }
-        }
-    }, [isOpen, courtId, activeView]);
+  useEffect(() => {
+    if (isOpen && courtId) {
+      fetchAvailability();
+      if (activeView === "bookings") {
+        fetchBookings();
+      }
+    }
+  }, [isOpen, courtId, activeView]);
 
-    const fetchAvailability = async () => {
-        try {
-            setLoading(true);
-            const response = await fetch(`http://localhost:5001/api/courts/${courtId}/availability`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && Array.isArray(data.data)) {
-                    setAvailabilitySlots(data.data);
-                }
-            }
-        } catch (err) {
-            setError('Failed to fetch availability');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchBookings = async () => {
+  const fetchAvailability = async () => {
     try {
-        setBookingsLoading(true);
-        setError('');
-        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/bookings`);
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && Array.isArray(data.data)) {
-                setBookings(data.data);
-            } else {
-                setError('Failed to fetch bookings');
-            }
-        } else {
-            setError('Failed to fetch bookings');
+      setLoading(true);
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/courts/${courtId}/availability`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          setAvailabilitySlots(data.data);
         }
-
+      }
     } catch (err) {
-        setError('Failed to fetch bookings');
+      setError("Failed to fetch availability");
     } finally {
-        setBookingsLoading(false);
+      setLoading(false);
     }
-};
-
-const fetchBooking = async () => {
-    try{
-        setBookingsLoading(true);
-        setError('');
-        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/bookings`);
-        if(response.ok){
-            const data = await response.json();
-            if(data.success && Array.isArray(data.data)){
-                setBookings(data.data);
-            }
-        }else{
-            setError('Failed to fetch bookings');
-        }
-    }catch(err){
-        setError('Failed to fetch bookings');
-    }finally{
-        setBookingsLoading(false);
-    }
-};
-
-const updateBookingStatus = async (bookingId, status) => {
-    try{
-        setError('');
-        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/bookings/${bookingId}/status`, {
-            method: 'PATCH',
-            headers:{
-                'Content-Type' : 'application/json'
-            },
-            body: JSON.stringify({ status }),
-        });
-
-        const data = await response.json();
-
-        if(data.success){
-            setBookings(bookings.map(booking => 
-                booking._id === bookingId ? { ...booking, status} : booking
-            ));
-        }else{
-            setError(data.message || 'Failed to update booking stauts');
-        }      
-    }catch(err){
-        setError('Failed to update booking status');
-    }
-};
-
-const addAvailabilitySlot = async () => {
-    try{
-        setError('');
-
-        if(newSlot.startTime >= newSlot.endTime){
-            setError('End time must be after start time');
-            return;
-        }
-
-        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/availability`,{
-            method: 'POST',
-            headers:{
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newSlot),
-        });
-
-        const data = await response.json();
-
-        if(data.success){
-            setAvailabilitySlots([...availabilitySlots, {...newSlot, _id: Date.now().toString()}]);
-            setNewSlot({
-                dayOfWeek: 0,
-                startTime: '09:00',
-                endTime: '10:00',
-                isRecurring: true
-            });
-            setIsAddingNew(false);
-        }else{
-            setError(data.message || 'Failed to add availability slot');
-        }
-    }catch(err){
-        setError('Failed to add availability slot');
-    }
-};
-
-const deleteAvailabilitySlot = async (slotId) => {
-    // Show confirmation dialog first
-    const result = await Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
-    });
-
-
-    if (!result.isConfirmed) {
-        return;
-    }
-
-    try {
-        setError('');
-        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/availability/${slotId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-           
-            setAvailabilitySlots(availabilitySlots.filter(slot => slot._id !== slotId));
-            
-          
-            await Swal.fire({
-                title: 'Deleted!',
-                text: 'Availability slot has been deleted.',
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-            });
-            
-       
-        } else {
-            setError(data.message || 'Failed to delete availability slot');
-            
-          
-            Swal.fire({
-                title: 'Error!',
-                text: data.message || 'Failed to delete availability slot',
-                icon: 'error'
-            });
-        }
-    } catch (err) {
-        setError('Failed to delete availability slot');
-        
-        // Show error alert for network/other errors
-        Swal.fire({
-            title: 'Error!',
-            text: 'Failed to delete availability slot',
-            icon: 'error'
-        });
-    }
-};
-
-const startEdit = (slot) => {
-    setEditingSlot({ ...slot});
-};
-
-const saveEdit = async () => {
-    try {
-        setError('');
-        if (editingSlot.startTime >= editingSlot.endTime) {
-            setError('End time must be after start time');
-            return;
-        }
-
-        const response = await fetch(`http://localhost:5001/api/courts/${courtId}/availability/${editingSlot._id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                 dayOfWeek: editingSlot.dayOfWeek,
-                startTime: editingSlot.startTime,
-                endTime: editingSlot.endTime,
-                isRecurring: editingSlot.isRecurring
-            }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            setAvailabilitySlots(availabilitySlots.map(slot => slot._id === editingSlot._id ? editingSlot : slot));
-            setEditingSlot(null);
-        } else {
-            setError(data.message || 'Failed to update availability slot');
-        }
-    } catch (err) {
-        setError('Failed to update availability slot');
-    }
-};
-
- const cancelEdit = () => {
-    setEditingSlot(null);
-    setError('');
   };
 
- const formatTime = (time) => {
-    const [hours, minutes] = time.split(':');
+  const fetchBookings = async () => {
+    try {
+      setBookingsLoading(true);
+      setError("");
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/courts/${courtId}/bookings`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          setBookings(data.data);
+        } else {
+          setError("Failed to fetch bookings");
+        }
+      } else {
+        setError("Failed to fetch bookings");
+      }
+    } catch (err) {
+      setError("Failed to fetch bookings");
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  const fetchBooking = async () => {
+    try {
+      setBookingsLoading(true);
+      setError("");
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/courts/${courtId}/bookings`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          setBookings(data.data);
+        }
+      } else {
+        setError("Failed to fetch bookings");
+      }
+    } catch (err) {
+      setError("Failed to fetch bookings");
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  const updateBookingStatus = async (bookingId, status) => {
+    try {
+      setError("");
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/courts/${courtId}/bookings/${bookingId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setBookings(
+          bookings.map((booking) =>
+            booking._id === bookingId ? { ...booking, status } : booking,
+          ),
+        );
+      } else {
+        setError(data.message || "Failed to update booking stauts");
+      }
+    } catch (err) {
+      setError("Failed to update booking status");
+    }
+  };
+
+  const addAvailabilitySlot = async () => {
+    try {
+      setError("");
+
+      if (newSlot.startTime >= newSlot.endTime) {
+        setError("End time must be after start time");
+        return;
+      }
+
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/courts/${courtId}/availability`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newSlot),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setAvailabilitySlots([
+          ...availabilitySlots,
+          { ...newSlot, _id: Date.now().toString() },
+        ]);
+        setNewSlot({
+          dayOfWeek: 0,
+          startTime: "09:00",
+          endTime: "10:00",
+          isRecurring: true,
+        });
+        setIsAddingNew(false);
+      } else {
+        setError(data.message || "Failed to add availability slot");
+      }
+    } catch (err) {
+      setError("Failed to add availability slot");
+    }
+  };
+
+  const deleteAvailabilitySlot = async (slotId) => {
+    // Show confirmation dialog first
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    try {
+      setError("");
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/courts/${courtId}/availability/${slotId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setAvailabilitySlots(
+          availabilitySlots.filter((slot) => slot._id !== slotId),
+        );
+
+        await Swal.fire({
+          title: "Deleted!",
+          text: "Availability slot has been deleted.",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      } else {
+        setError(data.message || "Failed to delete availability slot");
+
+        Swal.fire({
+          title: "Error!",
+          text: data.message || "Failed to delete availability slot",
+          icon: "error",
+        });
+      }
+    } catch (err) {
+      setError("Failed to delete availability slot");
+
+      // Show error alert for network/other errors
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to delete availability slot",
+        icon: "error",
+      });
+    }
+  };
+
+  const startEdit = (slot) => {
+    setEditingSlot({ ...slot });
+  };
+
+  const saveEdit = async () => {
+    try {
+      setError("");
+      if (editingSlot.startTime >= editingSlot.endTime) {
+        setError("End time must be after start time");
+        return;
+      }
+
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/courts/${courtId}/availability/${editingSlot._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            dayOfWeek: editingSlot.dayOfWeek,
+            startTime: editingSlot.startTime,
+            endTime: editingSlot.endTime,
+            isRecurring: editingSlot.isRecurring,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setAvailabilitySlots(
+          availabilitySlots.map((slot) =>
+            slot._id === editingSlot._id ? editingSlot : slot,
+          ),
+        );
+        setEditingSlot(null);
+      } else {
+        setError(data.message || "Failed to update availability slot");
+      }
+    } catch (err) {
+      setError("Failed to update availability slot");
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingSlot(null);
+    setError("");
+  };
+
+  const formatTime = (time) => {
+    const [hours, minutes] = time.split(":");
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const ampm = hour >= 12 ? "PM" : "AM";
     const formattedHour = hour % 12 || 12;
     return `${formattedHour}:${minutes} ${ampm}`;
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'confirmed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "confirmed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "cancelled":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "completed":
+        return "bg-blue-100 text-blue-800 border-blue-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
-
-   const groupSlotsByDay = () => {
+  const groupSlotsByDay = () => {
     const grouped = {};
     daysOfWeek.forEach((_, index) => {
-      grouped[index] = availabilitySlots.filter(slot => slot.dayOfWeek === index);
+      grouped[index] = availabilitySlots.filter(
+        (slot) => slot.dayOfWeek === index,
+      );
     });
     return grouped;
   };
 
-  const pendingBookingsCount = bookings.filter(booking => booking.status === 'pending').length;
+  const pendingBookingsCount = bookings.filter(
+    (booking) => booking.status === "pending",
+  ).length;
 
   if (!isOpen) return null;
 
   const groupedSlots = groupSlotsByDay();
 
-
-  return(
-     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-700 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="bg-white/20 p-3 rounded-xl">
-                {activeView === 'availability' ? (
+                {activeView === "availability" ? (
                   <Clock className="w-6 h-6 text-white" />
                 ) : (
                   <BookOpen className="w-6 h-6 text-white" />
@@ -335,7 +378,9 @@ const saveEdit = async () => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white">
-                  {activeView === 'availability' ? 'Available Times' : 'Booking Requests'}
+                  {activeView === "availability"
+                    ? "Available Times"
+                    : "Booking Requests"}
                 </h2>
                 <div className="flex items-center text-indigo-200 mt-1">
                   <User className="w-4 h-4 mr-2" />
@@ -344,10 +389,10 @@ const saveEdit = async () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              {activeView === 'availability' && (
+              {activeView === "availability" && (
                 <>
                   <button
-                    onClick={() => setActiveView('bookings')}
+                    onClick={() => setActiveView("bookings")}
                     className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 hover:scale-105 relative"
                   >
                     <BookOpen className="w-4 h-4" />
@@ -367,9 +412,9 @@ const saveEdit = async () => {
                   </button>
                 </>
               )}
-              {activeView === 'bookings' && (
+              {activeView === "bookings" && (
                 <button
-                  onClick={() => setActiveView('availability')}
+                  onClick={() => setActiveView("availability")}
                   className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 hover:scale-105"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -394,7 +439,7 @@ const saveEdit = async () => {
           )}
 
           {/* Availability View */}
-          {activeView === 'availability' && (
+          {activeView === "availability" && (
             <>
               {loading ? (
                 <div className="flex items-center justify-center h-64">
@@ -411,38 +456,65 @@ const saveEdit = async () => {
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Day</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Day
+                          </label>
                           <select
                             value={newSlot.dayOfWeek}
-                            onChange={(e) => setNewSlot({ ...newSlot, dayOfWeek: parseInt(e.target.value) })}
+                            onChange={(e) =>
+                              setNewSlot({
+                                ...newSlot,
+                                dayOfWeek: parseInt(e.target.value),
+                              })
+                            }
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           >
                             {daysOfWeek.map((day, index) => (
-                              <option key={index} value={index}>{day}</option>
+                              <option key={index} value={index}>
+                                {day}
+                              </option>
                             ))}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Start Time
+                          </label>
                           <select
                             value={newSlot.startTime}
-                            onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
+                            onChange={(e) =>
+                              setNewSlot({
+                                ...newSlot,
+                                startTime: e.target.value,
+                              })
+                            }
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           >
-                            {timeSlots.map(time => (
-                              <option key={time} value={time}>{formatTime(time)}</option>
+                            {timeSlots.map((time) => (
+                              <option key={time} value={time}>
+                                {formatTime(time)}
+                              </option>
                             ))}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            End Time
+                          </label>
                           <select
                             value={newSlot.endTime}
-                            onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
+                            onChange={(e) =>
+                              setNewSlot({
+                                ...newSlot,
+                                endTime: e.target.value,
+                              })
+                            }
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           >
-                            {timeSlots.map(time => (
-                              <option key={time} value={time}>{formatTime(time)}</option>
+                            {timeSlots.map((time) => (
+                              <option key={time} value={time}>
+                                {formatTime(time)}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -451,10 +523,17 @@ const saveEdit = async () => {
                             <input
                               type="checkbox"
                               checked={newSlot.isRecurring}
-                              onChange={(e) => setNewSlot({ ...newSlot, isRecurring: e.target.checked })}
+                              onChange={(e) =>
+                                setNewSlot({
+                                  ...newSlot,
+                                  isRecurring: e.target.checked,
+                                })
+                              }
                               className="w-4 h-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                             />
-                            <span className="ml-2 text-sm text-gray-700">Recurring</span>
+                            <span className="ml-2 text-sm text-gray-700">
+                              Recurring
+                            </span>
                           </label>
                         </div>
                       </div>
@@ -469,7 +548,7 @@ const saveEdit = async () => {
                         <button
                           onClick={() => {
                             setIsAddingNew(false);
-                            setError('');
+                            setError("");
                           }}
                           className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-colors"
                         >
@@ -483,7 +562,10 @@ const saveEdit = async () => {
                   {/* Weekly Schedule */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {daysOfWeek.map((day, dayIndex) => (
-                      <div key={dayIndex} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
+                      <div
+                        key={dayIndex}
+                        className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200"
+                      >
                         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                           <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
                           {day}
@@ -497,26 +579,43 @@ const saveEdit = async () => {
                         ) : (
                           <div className="space-y-3">
                             {groupedSlots[dayIndex].map((slot) => (
-                              <div key={slot._id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                              <div
+                                key={slot._id}
+                                className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                              >
                                 {editingSlot && editingSlot._id === slot._id ? (
                                   <div className="space-y-3">
                                     <div className="flex space-x-2">
                                       <select
                                         value={editingSlot.startTime}
-                                        onChange={(e) => setEditingSlot({ ...editingSlot, startTime: e.target.value })}
+                                        onChange={(e) =>
+                                          setEditingSlot({
+                                            ...editingSlot,
+                                            startTime: e.target.value,
+                                          })
+                                        }
                                         className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
                                       >
-                                        {timeSlots.map(time => (
-                                          <option key={time} value={time}>{formatTime(time)}</option>
+                                        {timeSlots.map((time) => (
+                                          <option key={time} value={time}>
+                                            {formatTime(time)}
+                                          </option>
                                         ))}
                                       </select>
                                       <select
                                         value={editingSlot.endTime}
-                                        onChange={(e) => setEditingSlot({ ...editingSlot, endTime: e.target.value })}
+                                        onChange={(e) =>
+                                          setEditingSlot({
+                                            ...editingSlot,
+                                            endTime: e.target.value,
+                                          })
+                                        }
                                         className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
                                       >
-                                        {timeSlots.map(time => (
-                                          <option key={time} value={time}>{formatTime(time)}</option>
+                                        {timeSlots.map((time) => (
+                                          <option key={time} value={time}>
+                                            {formatTime(time)}
+                                          </option>
                                         ))}
                                       </select>
                                     </div>
@@ -525,7 +624,12 @@ const saveEdit = async () => {
                                         <input
                                           type="checkbox"
                                           checked={editingSlot.isRecurring}
-                                          onChange={(e) => setEditingSlot({ ...editingSlot, isRecurring: e.target.checked })}
+                                          onChange={(e) =>
+                                            setEditingSlot({
+                                              ...editingSlot,
+                                              isRecurring: e.target.checked,
+                                            })
+                                          }
                                           className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded mr-2"
                                         />
                                         Recurring
@@ -550,7 +654,8 @@ const saveEdit = async () => {
                                   <div className="flex items-center justify-between">
                                     <div>
                                       <div className="font-semibold text-gray-800 text-sm">
-                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                        {formatTime(slot.startTime)} -{" "}
+                                        {formatTime(slot.endTime)}
                                       </div>
                                       <div className="text-xs text-gray-500 flex items-center mt-1">
                                         {slot.isRecurring ? (
@@ -572,7 +677,9 @@ const saveEdit = async () => {
                                         <Edit3 className="w-3 h-3" />
                                       </button>
                                       <button
-                                        onClick={() => deleteAvailabilitySlot(slot._id)}
+                                        onClick={() =>
+                                          deleteAvailabilitySlot(slot._id)
+                                        }
                                         className="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-lg transition-colors"
                                       >
                                         <Trash2 className="w-3 h-3" />
@@ -591,8 +698,12 @@ const saveEdit = async () => {
                   {availabilitySlots.length === 0 && !isAddingNew && (
                     <div className="text-center py-12">
                       <Clock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No Availability Set</h3>
-                      <p className="text-gray-600 mb-6">Add the first availability slot to get started</p>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        No Availability Set
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        Add the first availability slot to get started
+                      </p>
                       <button
                         onClick={() => setIsAddingNew(true)}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 mx-auto transition-colors"
@@ -608,7 +719,7 @@ const saveEdit = async () => {
           )}
 
           {/* Bookings View */}
-          {activeView === 'bookings' && (
+          {activeView === "bookings" && (
             <>
               {bookingsLoading ? (
                 <div className="flex items-center justify-center h-64">
@@ -619,27 +730,43 @@ const saveEdit = async () => {
                   {bookings.length === 0 ? (
                     <div className="text-center py-12">
                       <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No Booking Requests</h3>
-                      <p className="text-gray-600">You haven't received any booking requests yet</p>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        No Booking Requests
+                      </h3>
+                      <p className="text-gray-600">
+                        You haven't received any booking requests yet
+                      </p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {bookings.map((booking) => (
-                        <div key={booking._id} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+                        <div
+                          key={booking._id}
+                          className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200"
+                        >
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center space-x-3">
                               <div className="bg-indigo-100 p-2 rounded-lg">
                                 <User className="w-5 h-5 text-indigo-600" />
                               </div>
                               <div>
-                                <h3 className="font-semibold text-gray-800">{booking.userId?.name || 'User'}</h3>
-                                <p className="text-sm text-gray-600">{booking.userId?.email || 'No email provided'}</p>
-                                <p className="text-sm text-gray-600">{booking.userId?.phoneNumber || 'No Phone Number provided'}</p>
-
+                                <h3 className="font-semibold text-gray-800">
+                                  {booking.userId?.name || "User"}
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                  {booking.userId?.email || "No email provided"}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {booking.userId?.phoneNumber ||
+                                    "No Phone Number provided"}
+                                </p>
                               </div>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}>
-                              {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1)}
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}
+                            >
+                              {booking.status?.charAt(0).toUpperCase() +
+                                booking.status?.slice(1)}
                             </span>
                           </div>
 
@@ -650,7 +777,10 @@ const saveEdit = async () => {
                             </div>
                             <div className="flex items-center text-sm text-gray-600">
                               <Clock className="w-4 h-4 mr-2" />
-                              <span>{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</span>
+                              <span>
+                                {formatTime(booking.startTime)} -{" "}
+                                {formatTime(booking.endTime)}
+                              </span>
                             </div>
                             {booking.message && (
                               <div className="bg-gray-50 p-3 rounded-lg">
@@ -661,17 +791,21 @@ const saveEdit = async () => {
                             )}
                           </div>
 
-                          {booking.status === 'pending' && (
+                          {booking.status === "pending" && (
                             <div className="flex space-x-3">
                               <button
-                                onClick={() => updateBookingStatus(booking._id, 'confirmed')}
+                                onClick={() =>
+                                  updateBookingStatus(booking._id, "confirmed")
+                                }
                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
                               >
                                 <Check className="w-4 h-4" />
                                 <span>Accept</span>
                               </button>
                               <button
-                                onClick={() => updateBookingStatus(booking._id, 'cancelled')}
+                                onClick={() =>
+                                  updateBookingStatus(booking._id, "cancelled")
+                                }
                                 className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
                               >
                                 <XCircle className="w-4 h-4" />
@@ -680,10 +814,12 @@ const saveEdit = async () => {
                             </div>
                           )}
 
-                          {booking.status === 'confirmed' && (
+                          {booking.status === "confirmed" && (
                             <div className="flex space-x-3">
                               <button
-                                onClick={() => updateBookingStatus(booking._id, 'completed')}
+                                onClick={() =>
+                                  updateBookingStatus(booking._id, "completed")
+                                }
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
                               >
                                 <Check className="w-4 h-4" />
@@ -702,7 +838,7 @@ const saveEdit = async () => {
         </div>
       </div>
     </div>
-  )
+  );
 };
 
 export default AvailableTime;

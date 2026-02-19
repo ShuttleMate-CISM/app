@@ -1,5 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Calendar, Trash2, Edit3, Save, X, User, BookOpen, Check, XCircle, Eye, ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Clock,
+  Calendar,
+  Trash2,
+  Edit3,
+  Save,
+  X,
+  User,
+  BookOpen,
+  Check,
+  XCircle,
+  Eye,
+  ChevronLeft,
+} from "lucide-react";
 
 const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
@@ -8,24 +22,30 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
   const [editingSlot, setEditingSlot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookingsLoading, setBookingsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [activeView, setActiveView] = useState('availability'); // 'availability' or 'bookings'
+  const [error, setError] = useState("");
+  const [activeView, setActiveView] = useState("availability"); // 'availability' or 'bookings'
 
   const [newSlot, setNewSlot] = useState({
     dayOfWeek: 0,
-    startTime: '09:00',
-    endTime: '10:00',
-    isRecurring: true
+    startTime: "09:00",
+    endTime: "10:00",
+    isRecurring: true,
   });
 
   const daysOfWeek = [
-    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
   ];
 
   const timeSlots = [];
   for (let hour = 0; hour < 24; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
       timeSlots.push(timeString);
     }
   }
@@ -33,7 +53,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
   useEffect(() => {
     if (isOpen && coachId) {
       fetchAvailability();
-      if (activeView === 'bookings') {
+      if (activeView === "bookings") {
         fetchBookings();
       }
     }
@@ -42,7 +62,9 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
   const fetchAvailability = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/availability`);
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/Coachers/${coachId}/availability`,
+      );
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.data)) {
@@ -50,7 +72,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
         }
       }
     } catch (err) {
-      setError('Failed to fetch availability');
+      setError("Failed to fetch availability");
     } finally {
       setLoading(false);
     }
@@ -59,18 +81,20 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
   const fetchBookings = async () => {
     try {
       setBookingsLoading(true);
-      setError('');
-      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/bookings`);
+      setError("");
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/Coachers/${coachId}/bookings`,
+      );
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.data)) {
           setBookings(data.data);
         }
       } else {
-        setError('Failed to fetch bookings');
+        setError("Failed to fetch bookings");
       }
     } catch (err) {
-      setError('Failed to fetch bookings');
+      setError("Failed to fetch bookings");
     } finally {
       setBookingsLoading(false);
     }
@@ -78,85 +102,101 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
 
   const updateBookingStatus = async (bookingId, status) => {
     try {
-      setError('');
-      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/bookings/${bookingId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
+      setError("");
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/Coachers/${coachId}/bookings/${bookingId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
         },
-        body: JSON.stringify({ status }),
-      });
+      );
 
       const data = await response.json();
 
       if (data.success) {
         // Update the booking in the local state
-        setBookings(bookings.map(booking =>
-          booking._id === bookingId ? { ...booking, status } : booking
-        ));
+        setBookings(
+          bookings.map((booking) =>
+            booking._id === bookingId ? { ...booking, status } : booking,
+          ),
+        );
       } else {
-        setError(data.message || 'Failed to update booking status');
+        setError(data.message || "Failed to update booking status");
       }
     } catch (err) {
-      setError('Failed to update booking status');
+      setError("Failed to update booking status");
     }
   };
 
   const addAvailabilitySlot = async () => {
     try {
-      setError('');
+      setError("");
 
       if (newSlot.startTime >= newSlot.endTime) {
-        setError('End time must be after start time');
+        setError("End time must be after start time");
         return;
       }
 
-      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/availability`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/Coachers/${coachId}/availability`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newSlot),
         },
-        body: JSON.stringify(newSlot),
-      });
+      );
 
       const data = await response.json();
 
       if (data.success) {
-        setAvailabilitySlots([...availabilitySlots, { ...newSlot, _id: Date.now().toString() }]);
+        setAvailabilitySlots([
+          ...availabilitySlots,
+          { ...newSlot, _id: Date.now().toString() },
+        ]);
         setNewSlot({
           dayOfWeek: 0,
-          startTime: '09:00',
-          endTime: '10:00',
-          isRecurring: true
+          startTime: "09:00",
+          endTime: "10:00",
+          isRecurring: true,
         });
         setIsAddingNew(false);
       } else {
-        setError(data.message || 'Failed to add availability slot');
+        setError(data.message || "Failed to add availability slot");
       }
     } catch (err) {
-      setError('Failed to add availability slot');
+      setError("Failed to add availability slot");
     }
   };
 
   const deleteAvailabilitySlot = async (slotId) => {
     try {
-      setError('');
-      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/availability/${slotId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
+      setError("");
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/Coachers/${coachId}/availability/${slotId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       const data = await response.json();
 
       if (data.success) {
-        setAvailabilitySlots(availabilitySlots.filter(slot => slot._id !== slotId));
+        setAvailabilitySlots(
+          availabilitySlots.filter((slot) => slot._id !== slotId),
+        );
       } else {
-        setError(data.message || 'Failed to delete availability slot');
+        setError(data.message || "Failed to delete availability slot");
       }
     } catch (err) {
-      setError('Failed to delete availability slot');
+      setError("Failed to delete availability slot");
     }
   };
 
@@ -166,83 +206,90 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
 
   const saveEdit = async () => {
     try {
-      setError('');
+      setError("");
 
       if (editingSlot.startTime >= editingSlot.endTime) {
-        setError('End time must be after start time');
+        setError("End time must be after start time");
         return;
       }
 
-      const response = await fetch(`http://localhost:5001/api/Coachers/${coachId}/availability/${editingSlot._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${window.__API_BASE_URL__}/api/Coachers/${coachId}/availability/${editingSlot._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            dayOfWeek: editingSlot.dayOfWeek,
+            startTime: editingSlot.startTime,
+            endTime: editingSlot.endTime,
+            isRecurring: editingSlot.isRecurring,
+          }),
         },
-        body: JSON.stringify({
-          dayOfWeek: editingSlot.dayOfWeek,
-          startTime: editingSlot.startTime,
-          endTime: editingSlot.endTime,
-          isRecurring: editingSlot.isRecurring
-        }),
-      });
+      );
 
       const data = await response.json();
 
       if (data.success) {
-        setAvailabilitySlots(availabilitySlots.map(slot =>
-          slot._id === editingSlot._id ? editingSlot : slot
-        ));
+        setAvailabilitySlots(
+          availabilitySlots.map((slot) =>
+            slot._id === editingSlot._id ? editingSlot : slot,
+          ),
+        );
         setEditingSlot(null);
       } else {
-        setError(data.message || 'Failed to update availability slot');
+        setError(data.message || "Failed to update availability slot");
       }
     } catch (err) {
-      setError('Failed to update availability slot');
+      setError("Failed to update availability slot");
     }
   };
 
   const cancelEdit = () => {
     setEditingSlot(null);
-    setError('');
+    setError("");
   };
 
   const formatTime = (time) => {
-    const [hours, minutes] = time.split(':');
+    const [hours, minutes] = time.split(":");
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const ampm = hour >= 12 ? "PM" : "AM";
     const formattedHour = hour % 12 || 12;
     return `${formattedHour}:${minutes} ${ampm}`;
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'confirmed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "confirmed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "cancelled":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "completed":
+        return "bg-blue-100 text-blue-800 border-blue-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const groupSlotsByDay = () => {
     const grouped = {};
     daysOfWeek.forEach((_, index) => {
-      grouped[index] = availabilitySlots.filter(slot => slot.dayOfWeek === index);
+      grouped[index] = availabilitySlots.filter(
+        (slot) => slot.dayOfWeek === index,
+      );
     });
     return grouped;
   };
@@ -250,16 +297,18 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
   // Helper function to safely get user data
   const getUserData = (booking) => {
     if (!booking.userId) return null;
-    
+
     // Handle both populated and non-populated userId
-    if (typeof booking.userId === 'object') {
+    if (typeof booking.userId === "object") {
       return booking.userId; // Already populated
     }
-    
+
     return null; // Not populated, just an ID
   };
 
-  const pendingBookingsCount = bookings.filter(booking => booking.status === 'pending').length;
+  const pendingBookingsCount = bookings.filter(
+    (booking) => booking.status === "pending",
+  ).length;
 
   if (!isOpen) return null;
 
@@ -273,7 +322,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="bg-white/20 p-3 rounded-xl">
-                {activeView === 'availability' ? (
+                {activeView === "availability" ? (
                   <Clock className="w-6 h-6 text-white" />
                 ) : (
                   <BookOpen className="w-6 h-6 text-white" />
@@ -281,7 +330,9 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white">
-                  {activeView === 'availability' ? 'Available Times' : 'Booking Requests'}
+                  {activeView === "availability"
+                    ? "Available Times"
+                    : "Booking Requests"}
                 </h2>
                 <div className="flex items-center text-indigo-200 mt-1">
                   <User className="w-4 h-4 mr-2" />
@@ -290,10 +341,10 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              {activeView === 'availability' && (
+              {activeView === "availability" && (
                 <>
                   <button
-                    onClick={() => setActiveView('bookings')}
+                    onClick={() => setActiveView("bookings")}
                     className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 hover:scale-105 relative"
                   >
                     <BookOpen className="w-4 h-4" />
@@ -313,9 +364,9 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                   </button>
                 </>
               )}
-              {activeView === 'bookings' && (
+              {activeView === "bookings" && (
                 <button
-                  onClick={() => setActiveView('availability')}
+                  onClick={() => setActiveView("availability")}
                   className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 hover:scale-105"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -340,7 +391,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
           )}
 
           {/* Availability View */}
-          {activeView === 'availability' && (
+          {activeView === "availability" && (
             <>
               {loading ? (
                 <div className="flex items-center justify-center h-64">
@@ -357,38 +408,65 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Day</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Day
+                          </label>
                           <select
                             value={newSlot.dayOfWeek}
-                            onChange={(e) => setNewSlot({ ...newSlot, dayOfWeek: parseInt(e.target.value) })}
+                            onChange={(e) =>
+                              setNewSlot({
+                                ...newSlot,
+                                dayOfWeek: parseInt(e.target.value),
+                              })
+                            }
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           >
                             {daysOfWeek.map((day, index) => (
-                              <option key={index} value={index}>{day}</option>
+                              <option key={index} value={index}>
+                                {day}
+                              </option>
                             ))}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Start Time
+                          </label>
                           <select
                             value={newSlot.startTime}
-                            onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
+                            onChange={(e) =>
+                              setNewSlot({
+                                ...newSlot,
+                                startTime: e.target.value,
+                              })
+                            }
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           >
-                            {timeSlots.map(time => (
-                              <option key={time} value={time}>{formatTime(time)}</option>
+                            {timeSlots.map((time) => (
+                              <option key={time} value={time}>
+                                {formatTime(time)}
+                              </option>
                             ))}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            End Time
+                          </label>
                           <select
                             value={newSlot.endTime}
-                            onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
+                            onChange={(e) =>
+                              setNewSlot({
+                                ...newSlot,
+                                endTime: e.target.value,
+                              })
+                            }
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           >
-                            {timeSlots.map(time => (
-                              <option key={time} value={time}>{formatTime(time)}</option>
+                            {timeSlots.map((time) => (
+                              <option key={time} value={time}>
+                                {formatTime(time)}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -397,10 +475,17 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                             <input
                               type="checkbox"
                               checked={newSlot.isRecurring}
-                              onChange={(e) => setNewSlot({ ...newSlot, isRecurring: e.target.checked })}
+                              onChange={(e) =>
+                                setNewSlot({
+                                  ...newSlot,
+                                  isRecurring: e.target.checked,
+                                })
+                              }
                               className="w-4 h-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                             />
-                            <span className="ml-2 text-sm text-gray-700">Recurring</span>
+                            <span className="ml-2 text-sm text-gray-700">
+                              Recurring
+                            </span>
                           </label>
                         </div>
                       </div>
@@ -415,7 +500,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                         <button
                           onClick={() => {
                             setIsAddingNew(false);
-                            setError('');
+                            setError("");
                           }}
                           className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 transition-colors"
                         >
@@ -429,7 +514,10 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                   {/* Weekly Schedule */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {daysOfWeek.map((day, dayIndex) => (
-                      <div key={dayIndex} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
+                      <div
+                        key={dayIndex}
+                        className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200"
+                      >
                         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                           <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
                           {day}
@@ -443,26 +531,43 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                         ) : (
                           <div className="space-y-3">
                             {groupedSlots[dayIndex].map((slot) => (
-                              <div key={slot._id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                              <div
+                                key={slot._id}
+                                className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                              >
                                 {editingSlot && editingSlot._id === slot._id ? (
                                   <div className="space-y-3">
                                     <div className="flex space-x-2">
                                       <select
                                         value={editingSlot.startTime}
-                                        onChange={(e) => setEditingSlot({ ...editingSlot, startTime: e.target.value })}
+                                        onChange={(e) =>
+                                          setEditingSlot({
+                                            ...editingSlot,
+                                            startTime: e.target.value,
+                                          })
+                                        }
                                         className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
                                       >
-                                        {timeSlots.map(time => (
-                                          <option key={time} value={time}>{formatTime(time)}</option>
+                                        {timeSlots.map((time) => (
+                                          <option key={time} value={time}>
+                                            {formatTime(time)}
+                                          </option>
                                         ))}
                                       </select>
                                       <select
                                         value={editingSlot.endTime}
-                                        onChange={(e) => setEditingSlot({ ...editingSlot, endTime: e.target.value })}
+                                        onChange={(e) =>
+                                          setEditingSlot({
+                                            ...editingSlot,
+                                            endTime: e.target.value,
+                                          })
+                                        }
                                         className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
                                       >
-                                        {timeSlots.map(time => (
-                                          <option key={time} value={time}>{formatTime(time)}</option>
+                                        {timeSlots.map((time) => (
+                                          <option key={time} value={time}>
+                                            {formatTime(time)}
+                                          </option>
                                         ))}
                                       </select>
                                     </div>
@@ -471,7 +576,12 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                                         <input
                                           type="checkbox"
                                           checked={editingSlot.isRecurring}
-                                          onChange={(e) => setEditingSlot({ ...editingSlot, isRecurring: e.target.checked })}
+                                          onChange={(e) =>
+                                            setEditingSlot({
+                                              ...editingSlot,
+                                              isRecurring: e.target.checked,
+                                            })
+                                          }
                                           className="w-3 h-3 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded mr-2"
                                         />
                                         Recurring
@@ -496,7 +606,8 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                                   <div className="flex items-center justify-between">
                                     <div>
                                       <div className="font-semibold text-gray-800 text-sm">
-                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                        {formatTime(slot.startTime)} -{" "}
+                                        {formatTime(slot.endTime)}
                                       </div>
                                       <div className="text-xs text-gray-500 flex items-center mt-1">
                                         {slot.isRecurring ? (
@@ -518,7 +629,9 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                                         <Edit3 className="w-3 h-3" />
                                       </button>
                                       <button
-                                        onClick={() => deleteAvailabilitySlot(slot._id)}
+                                        onClick={() =>
+                                          deleteAvailabilitySlot(slot._id)
+                                        }
                                         className="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-lg transition-colors"
                                       >
                                         <Trash2 className="w-3 h-3" />
@@ -537,8 +650,12 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                   {availabilitySlots.length === 0 && !isAddingNew && (
                     <div className="text-center py-12">
                       <Clock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No Availability Set</h3>
-                      <p className="text-gray-600 mb-6">Add the first availability slot to get started</p>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        No Availability Set
+                      </h3>
+                      <p className="text-gray-600 mb-6">
+                        Add the first availability slot to get started
+                      </p>
                       <button
                         onClick={() => setIsAddingNew(true)}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 mx-auto transition-colors"
@@ -554,7 +671,7 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
           )}
 
           {/* Bookings View */}
-          {activeView === 'bookings' && (
+          {activeView === "bookings" && (
             <>
               {bookingsLoading ? (
                 <div className="flex items-center justify-center h-64">
@@ -565,16 +682,23 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                   {bookings.length === 0 ? (
                     <div className="text-center py-12">
                       <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">No Booking Requests</h3>
-                      <p className="text-gray-600">You haven't received any booking requests yet</p>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        No Booking Requests
+                      </h3>
+                      <p className="text-gray-600">
+                        You haven't received any booking requests yet
+                      </p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {bookings.map((booking) => {
                         const userData = getUserData(booking);
-                        
+
                         return (
-                          <div key={booking._id} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+                          <div
+                            key={booking._id}
+                            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200"
+                          >
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex items-center space-x-3">
                                 <div className="bg-indigo-100 p-2 rounded-lg">
@@ -582,18 +706,22 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                                 </div>
                                 <div>
                                   <h3 className="font-semibold text-gray-800">
-                                    {userData?.name || 'Unknown User'}
+                                    {userData?.name || "Unknown User"}
                                   </h3>
                                   <p className="text-sm text-gray-600">
-                                    {userData?.email || 'No email provided'}
+                                    {userData?.email || "No email provided"}
                                   </p>
                                   <p className="text-sm text-gray-600">
-                                    {userData?.phoneNumber || 'No phone number provided'}
+                                    {userData?.phoneNumber ||
+                                      "No phone number provided"}
                                   </p>
                                 </div>
                               </div>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}>
-                                {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1)}
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}
+                              >
+                                {booking.status?.charAt(0).toUpperCase() +
+                                  booking.status?.slice(1)}
                               </span>
                             </div>
 
@@ -604,7 +732,10 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                               </div>
                               <div className="flex items-center text-sm text-gray-600">
                                 <Clock className="w-4 h-4 mr-2" />
-                                <span>{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</span>
+                                <span>
+                                  {formatTime(booking.startTime)} -{" "}
+                                  {formatTime(booking.endTime)}
+                                </span>
                               </div>
                               {booking.message && (
                                 <div className="bg-gray-50 p-3 rounded-lg">
@@ -615,17 +746,27 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                               )}
                             </div>
 
-                            {booking.status === 'pending' && (
+                            {booking.status === "pending" && (
                               <div className="flex space-x-3">
                                 <button
-                                  onClick={() => updateBookingStatus(booking._id, 'confirmed')}
+                                  onClick={() =>
+                                    updateBookingStatus(
+                                      booking._id,
+                                      "confirmed",
+                                    )
+                                  }
                                   className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
                                 >
                                   <Check className="w-4 h-4" />
                                   <span>Accept</span>
                                 </button>
                                 <button
-                                  onClick={() => updateBookingStatus(booking._id, 'cancelled')}
+                                  onClick={() =>
+                                    updateBookingStatus(
+                                      booking._id,
+                                      "cancelled",
+                                    )
+                                  }
                                   className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
                                 >
                                   <XCircle className="w-4 h-4" />
@@ -634,10 +775,15 @@ const AvailableTime = ({ isOpen, coachId, coachName, onClose }) => {
                               </div>
                             )}
 
-                            {booking.status === 'confirmed' && (
+                            {booking.status === "confirmed" && (
                               <div className="flex space-x-3">
                                 <button
-                                  onClick={() => updateBookingStatus(booking._id, 'completed')}
+                                  onClick={() =>
+                                    updateBookingStatus(
+                                      booking._id,
+                                      "completed",
+                                    )
+                                  }
                                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
                                 >
                                   <Check className="w-4 h-4" />

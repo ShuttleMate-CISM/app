@@ -17,7 +17,11 @@
     "dev:backend": "npm --prefix Shuttlemate-Backend run dev",
     "dev:frontend": "npm --prefix Shuttlemate-Frontend run dev",
     "lint:frontend": "npm --prefix Shuttlemate-Frontend run lint",
-    "preview:frontend": "npm --prefix Shuttlemate-Frontend run preview"
+    "preview:frontend": "npm --prefix Shuttlemate-Frontend run preview",
+    "zap": "./zap/run-zap-scan.sh",
+    "zap:frontend": "./zap/run-zap-scan.sh frontend",
+    "zap:backend": "./zap/run-zap-scan.sh backend",
+    "zap:baseline": "./zap/run-zap-scan.sh baseline"
   },
   "keywords": [
     "badminton",

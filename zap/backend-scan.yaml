@@ -1,0 +1,341 @@
+---
+# ==============================================================================
+# OWASP ZAP Automation Framework - ShuttleMate Backend API Scan
+# ==============================================================================
+# This config scans the Express API backend at http://localhost:5001
+# Targets all /api/* endpoints for common web vulnerabilities
+#
+# Usage (via Docker):
+#   docker run --rm -v $(pwd)/zap:/zap/wrk:rw \
+#     --network host \
+#     zaproxy/zap-stable \
+#     zap.sh -cmd -autorun /zap/wrk/backend-scan.yaml
+# ==============================================================================
+
+env:
+  contexts:
+    - name: "ShuttleMate-API"
+      urls:
+        - "http://host.docker.internal:5001/health"
+      includePaths:
+        - "http://host.docker.internal:5001/api/.*"
+      excludePaths: []
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  # ---- OpenAPI Import (if you have a spec, uncomment below) ----
+  # - type: openapi
+  #   parameters:
+  #     apiUrl: "http://localhost:5001/api-docs/swagger.json"
+  #     context: "ShuttleMate-API"
+
+  # ---- Seed known API endpoints ----
+  - type: requestor
+    parameters:
+      user: ""
+    requests:
+      - url: "http://host.docker.internal:5001/health"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/auth/register"
+        method: "POST"
+        data: '{"username":"zap-test-user","password":"ZapTest123!","role":"user","email":"zap-test-user@example.com"}'
+      - url: "http://host.docker.internal:5001/api/auth/login"
+        method: "POST"
+        data: '{"username":"zap-test-user","password":"ZapTest123!"}'
+      - url: "http://host.docker.internal:5001/api/auth/users"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/users/admin"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_ADMIN__"
+      - url: "http://host.docker.internal:5001/api/users/coach"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_COACH__"
+      - url: "http://host.docker.internal:5001/api/users/courtowner"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_COURTOWNER__"
+      - url: "http://host.docker.internal:5001/api/users/shopowner"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_SHOPOWNER__"
+      - url: "http://host.docker.internal:5001/api/user"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/coachers"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/coachers/search"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/courts"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/shops"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/shops/search?q=test"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/items"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/items/shop/1"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/matches"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/news"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/videos"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/videos/search"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/videos/000000000000000000000000"
+        method: "DELETE"
+      - url: "http://host.docker.internal:5001/api/videos/video/000000000000000000000000"
+        method: "PUT"
+        data: '{"title":"zap-update-video"}'
+      - url: "http://host.docker.internal:5001/api/videos"
+        method: "POST"
+        data: '{"title":"zap-video","url":"https://example.com/video"}'
+
+      - url: "http://host.docker.internal:5001/api/coachers"
+        method: "POST"
+        data: '{"name":"zap-coach"}'
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000"
+        method: "PUT"
+        data: '{"name":"zap-coach-updated"}'
+      - url: "http://host.docker.internal:5001/api/coachers/coach/000000000000000000000000"
+        method: "DELETE"
+
+      - url: "http://host.docker.internal:5001/api/courts"
+        method: "POST"
+        data: '{"name":"zap-court"}'
+      - url: "http://host.docker.internal:5001/api/courts/court/000000000000000000000000"
+        method: "PUT"
+        data: '{"name":"zap-court-updated"}'
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000"
+        method: "DELETE"
+
+      - url: "http://host.docker.internal:5001/api/shops"
+        method: "POST"
+        data: '{"name":"zap-shop"}'
+      - url: "http://host.docker.internal:5001/api/shops/shop/000000000000000000000000"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/shops/shop/000000000000000000000000"
+        method: "PUT"
+        data: '{"name":"zap-shop-updated"}'
+      - url: "http://host.docker.internal:5001/api/shops/shop/000000000000000000000000"
+        method: "DELETE"
+      - url: "http://host.docker.internal:5001/api/shops/000000000000000000000000/categories"
+        method: "POST"
+        data: '{"name":"zap-category"}'
+      - url: "http://host.docker.internal:5001/api/shops/shop/000000000000000000000000/categories/000000000000000000000000/items"
+        method: "POST"
+        data: '{"name":"zap-item","price":1000}'
+      - url: "http://host.docker.internal:5001/api/shops/000000000000000000000000/items/000000000000000000000000"
+        method: "DELETE"
+
+      - url: "http://host.docker.internal:5001/api/items/000000000000000000000000"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/items/category/000000000000000000000000"
+        method: "GET"
+
+      - url: "http://host.docker.internal:5001/api/matches"
+        method: "POST"
+        data: '{"title":"zap-match"}'
+      - url: "http://host.docker.internal:5001/api/matches/match/000000000000000000000000"
+        method: "PUT"
+        data: '{"title":"zap-match-updated"}'
+      - url: "http://host.docker.internal:5001/api/matches/000000000000000000000000"
+        method: "DELETE"
+
+      - url: "http://host.docker.internal:5001/api/user"
+        method: "POST"
+        data: '{"firebaseUid":"zap-user","email":"zap-user@example.com"}'
+      - url: "http://host.docker.internal:5001/api/user/zap-user"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/user/zap-user"
+        method: "PUT"
+        data: '{"displayName":"zap-user-updated"}'
+      - url: "http://host.docker.internal:5001/api/user/000000000000000000000000"
+        method: "DELETE"
+
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/availability"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/availability"
+        method: "POST"
+        data: '{"date":"2026-02-20","startTime":"09:00","endTime":"10:00"}'
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/availability/000000000000000000000000"
+        method: "PUT"
+        data: '{"startTime":"10:00","endTime":"11:00"}'
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/availability/000000000000000000000000"
+        method: "DELETE"
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/check-availability"
+        method: "POST"
+        data: '{"date":"2026-02-20","startTime":"09:00","endTime":"10:00"}'
+
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/bookings"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/bookings/000000000000000000000000"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/bookings"
+        method: "POST"
+        data: '{"userId":"zap-user","date":"2026-02-20"}'
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/bookings/000000000000000000000000/status"
+        method: "PATCH"
+        data: '{"status":"confirmed"}'
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/bookings/000000000000000000000000"
+        method: "PUT"
+        data: '{"notes":"zap-update"}'
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/bookings/000000000000000000000000"
+        method: "DELETE"
+      - url: "http://host.docker.internal:5001/api/coachers/000000000000000000000000/users/zap-user/bookings"
+        method: "GET"
+
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/availability"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/availability"
+        method: "POST"
+        data: '{"date":"2026-02-20","startTime":"09:00","endTime":"10:00"}'
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/availability/000000000000000000000000"
+        method: "PUT"
+        data: '{"startTime":"10:00","endTime":"11:00"}'
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/availability/000000000000000000000000"
+        method: "DELETE"
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/check-availability"
+        method: "POST"
+        data: '{"date":"2026-02-20","startTime":"09:00","endTime":"10:00"}'
+
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/bookings"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/bookings/000000000000000000000000"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/bookings"
+        method: "POST"
+        data: '{"userId":"zap-user","date":"2026-02-20"}'
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/bookings/000000000000000000000000/status"
+        method: "PATCH"
+        data: '{"status":"confirmed"}'
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/bookings/000000000000000000000000"
+        method: "PUT"
+        data: '{"notes":"zap-update"}'
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/bookings/000000000000000000000000"
+        method: "DELETE"
+      - url: "http://host.docker.internal:5001/api/courts/000000000000000000000000/users/zap-user/bookings"
+        method: "GET"
+
+      - url: "http://host.docker.internal:5001/api/auth/delete/000000000000000000000000"
+        method: "DELETE"
+
+      - url: "http://host.docker.internal:5001/api/news"
+        method: "POST"
+        data: '{"title":"zap-news","description":"zap"}'
+      - url: "http://host.docker.internal:5001/api/news/000000000000000000000000"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/news/000000000000000000000000"
+        method: "PUT"
+        data: '{"title":"zap-news-updated"}'
+      - url: "http://host.docker.internal:5001/api/news/000000000000000000000000"
+        method: "DELETE"
+
+      - url: "http://host.docker.internal:5001/api/payment/create-payment-intent"
+        method: "POST"
+        data: '{"amount":1000,"currency":"usd"}'
+      - url: "http://host.docker.internal:5001/api/payment/save-payment"
+        method: "POST"
+        data: '{"userId":"zap-user","itemId":"000000000000000000000000","quantity":1,"amount":1000,"currency":"usd","paymentIntentId":"pi_zap_test","status":"succeeded"}'
+      - url: "http://host.docker.internal:5001/api/payment/payment/pi_zap_test"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/payment/payments/user/zap-user"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/payment/payment/000000000000000000000000/status"
+        method: "PUT"
+        data: '{"status":"failed"}'
+      - url: "http://host.docker.internal:5001/api/payment/payment/000000000000000000000000"
+        method: "DELETE"
+      - url: "http://host.docker.internal:5001/api/payment/payments/stats"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/payment/payments/stats/zap-user"
+        method: "GET"
+
+      - url: "http://host.docker.internal:5001/api/payment/payments"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/notifications/register-token"
+        method: "POST"
+        data: '{"token":"zap-test-token","userId":"zap-test-user"}'
+      - url: "http://host.docker.internal:5001/api/notifications/send-notification"
+        method: "POST"
+        data: '{"title":"zap-test","body":"zap-message"}'
+
+      # __ZAP_DYNAMIC_BACKEND_REQUESTS__
+
+  # ---- Spider the API ----
+  - type: spider
+    parameters:
+      context: "ShuttleMate-API"
+      maxDuration: 4
+      maxDepth: 5
+      maxChildren: 20
+      acceptCookies: true
+      threadCount: 3
+
+  # ---- Passive Scan ----
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 6
+
+  # ---- Active Scan ----
+  - type: activeScan
+    parameters:
+      context: "ShuttleMate-API"
+      maxRuleDurationInMins: 3
+      maxScanDurationInMins: 12
+      threadPerHost: 3
+      delayInMs: 50
+      addQueryParam: true
+      handleAntiCSRFTokens: false
+      injectPluginIdInHeader: false
+      scanHeadersAllRequests: true
+    policyDefinition:
+      defaultStrength: "medium"
+      defaultThreshold: "medium"
+      rules:
+        # SQL/NoSQL Injection
+        - id: 40018 # SQL Injection
+          strength: "high"
+          threshold: "low"
+        - id: 40019 # SQL Injection (MySQL)
+          strength: "high"
+          threshold: "low"
+        - id: 40020 # SQL Injection (Hypersonic)
+          strength: "high"
+          threshold: "low"
+        - id: 40021 # SQL Injection (Oracle)
+          strength: "high"
+          threshold: "low"
+        - id: 40022 # SQL Injection (PostgreSQL)
+          strength: "high"
+          threshold: "low"
+        # Path Traversal
+        - id: 6 # Path Traversal
+          strength: "high"
+          threshold: "low"
+
+  # ---- Generate Reports ----
+  - type: report
+    parameters:
+      template: "traditional-html-plus"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "shuttlemate-backend-report"
+      reportTitle: "ShuttleMate Backend API - OWASP ZAP DAST Report"
+      reportDescription: "DAST security scan of ShuttleMate Backend API (Express/Node.js) - CISM Phase 3"
+      displayReport: false
+
+  - type: report
+    parameters:
+      template: "traditional-json-plus"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "shuttlemate-backend-report"
+      reportTitle: "ShuttleMate Backend API - OWASP ZAP DAST Report"
+      reportDescription: "DAST security scan of ShuttleMate Backend API (Express/Node.js) - CISM Phase 3"
+      displayReport: false

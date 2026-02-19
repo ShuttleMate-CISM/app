@@ -1,0 +1,140 @@
+---
+# ==============================================================================
+# OWASP ZAP Automation Framework - ShuttleMate Frontend Scan
+# ==============================================================================
+# This config scans the React frontend at http://localhost:5173
+# Uses the ZAP Automation Framework (AF) for structured, repeatable scans
+#
+# Usage (via Docker):
+#   docker run --rm -v $(pwd)/zap:/zap/wrk:rw \
+#     --network host \
+#     zaproxy/zap-stable \
+#     zap.sh -cmd -autorun /zap/wrk/frontend-scan.yaml
+# ==============================================================================
+
+env:
+  contexts:
+    - name: "ShuttleMate-Frontend"
+      urls:
+        - "http://host.docker.internal:5173"
+      includePaths:
+        - "http://host.docker.internal:5173/.*"
+        - "http://host.docker.internal:5001/api/.*"
+      excludePaths:
+        - ".*\\.js$"
+        - ".*\\.css$"
+        - ".*\\.png$"
+        - ".*\\.jpg$"
+        - ".*\\.svg$"
+        - ".*\\.ico$"
+        - ".*\\.woff2?$"
+        - ".*node_modules.*"
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  # ---- Seed SPA routes and key API calls ----
+  - type: requestor
+    parameters:
+      user: ""
+    requests:
+      - url: "http://host.docker.internal:5173/"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Splashscreen"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/login"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/register"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/unauthorized"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/home"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Videopage"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/timeline"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/News"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Matchtimeline"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Users"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Coachers"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/Court"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/shop"
+        method: "GET"
+      - url: "http://host.docker.internal:5173/payment"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/auth/login"
+        method: "POST"
+        data: '{"username":"zap-test-user","password":"ZapTest123!"}'
+      - url: "http://host.docker.internal:5001/api/news"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/videos"
+        method: "GET"
+      - url: "http://host.docker.internal:5001/api/users/admin"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_ADMIN__"
+      - url: "http://host.docker.internal:5001/api/users/coach"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_COACH__"
+      - url: "http://host.docker.internal:5001/api/users/courtowner"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_COURTOWNER__"
+      - url: "http://host.docker.internal:5001/api/users/shopowner"
+        method: "GET"
+        headers:
+          - "Authorization: Bearer __ZAP_TOKEN_SHOPOWNER__"
+
+  # ---- Spider the frontend SPA ----
+  - type: spider
+    parameters:
+      context: "ShuttleMate-Frontend"
+      maxDuration: 4 # minutes
+      maxDepth: 5
+      maxChildren: 20
+      acceptCookies: true
+      handleODataParametersVisited: false
+      handleParameters: "USE_ALL"
+      parseComments: false
+      threadCount: 3
+
+  # NOTE: AJAX Spider removed — it launches headless browsers inside Docker
+  # which uses 2-3GB+ RAM. On 8GB machines this causes OOM freezes.
+  # The traditional spider above is sufficient for collecting URLs to scan.
+
+  # ---- Passive Scan (analyzes responses already collected) ----
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 6 # minutes
+
+  # Active scan intentionally omitted for frontend stability in this environment.
+  # Frontend remains covered by requestor seeding + spider + passive analysis,
+  # while full active attack scanning is applied to backend APIs.
+
+  # ---- Generate Reports ----
+  - type: report
+    parameters:
+      template: "traditional-html-plus"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "shuttlemate-frontend-report"
+      reportTitle: "ShuttleMate Frontend - OWASP ZAP DAST Report"
+      reportDescription: "DAST security scan of ShuttleMate Frontend (React/Vite) - CISM Phase 3"
+      displayReport: false
+
+  - type: report
+    parameters:
+      template: "traditional-json-plus"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "shuttlemate-frontend-report"
+      reportTitle: "ShuttleMate Frontend - OWASP ZAP DAST Report"
+      reportDescription: "DAST security scan of ShuttleMate Frontend (React/Vite) - CISM Phase 3"
+      displayReport: false

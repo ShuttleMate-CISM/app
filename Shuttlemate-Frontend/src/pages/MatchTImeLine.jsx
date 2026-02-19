@@ -18,12 +18,13 @@ const MatchTimeLine = () => {
   const fetchMatches = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get("http://localhost:5000/api/matches/");
+      const response = await axios.get(
+        `${window.__API_BASE_URL__}/api/matches/`,
+      );
       console.log("✅ API Response:", response.data);
 
       // Ensure correct data structure
       setMatches(response.data.matches || response.data);
-
     } catch (error) {
       console.error("❌ Error fetching matches:", error);
       Swal.fire({
@@ -48,18 +49,20 @@ const MatchTimeLine = () => {
 
   const handleDeleteMatch = async (matchId) => {
     try {
-      const response = await axios.delete(`http://localhost:5000/api/matches/${matchId}`);
-      
+      const response = await axios.delete(
+        `${window.__API_BASE_URL__}/api/matches/${matchId}`,
+      );
+
       if (response.data.success) {
         // Update state to remove the deleted match
-        setMatches(matches.filter(match => match._id !== matchId));
-        
+        setMatches(matches.filter((match) => match._id !== matchId));
+
         Swal.fire({
-          icon: 'success',
-          title: 'Deleted!',
-          text: 'Match has been deleted successfully.',
+          icon: "success",
+          title: "Deleted!",
+          text: "Match has been deleted successfully.",
           timer: 1500,
-          showConfirmButton: false
+          showConfirmButton: false,
         });
       } else {
         throw new Error("Failed to delete match");
@@ -67,9 +70,9 @@ const MatchTimeLine = () => {
     } catch (error) {
       console.error("❌ Error deleting match:", error);
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to delete match'
+        icon: "error",
+        title: "Error",
+        text: "Failed to delete match",
       });
     }
   };
@@ -93,7 +96,8 @@ const MatchTimeLine = () => {
         uploadTask.on(
           "state_changed",
           (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             console.log(`⬆ Upload Progress: ${progress}%`);
           },
           (error) => {
@@ -103,7 +107,7 @@ const MatchTimeLine = () => {
           async () => {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             resolve(downloadURL);
-          }
+          },
         );
       });
     } catch (error) {
@@ -121,7 +125,10 @@ const MatchTimeLine = () => {
       let photoURL = matchData.MatchPhoto;
 
       // Upload new photo if needed
-      if (matchData.MatchPhotoFile && matchData.MatchPhotoFile instanceof File) {
+      if (
+        matchData.MatchPhotoFile &&
+        matchData.MatchPhotoFile instanceof File
+      ) {
         photoURL = await uploadFileToFirebase(matchData.MatchPhotoFile);
         if (!photoURL) throw new Error("Failed to upload image");
       }
@@ -138,13 +145,16 @@ const MatchTimeLine = () => {
       if (currentMatch?._id) {
         // Update existing match
         response = await axios.put(
-          `http://localhost:5000/api/matches/match/${currentMatch._id}`,
-          matchDataToSave
+          `${window.__API_BASE_URL__}/api/matches/match/${currentMatch._id}`,
+          matchDataToSave,
         );
         successMessage = "Match updated successfully!";
       } else {
         // Create new match
-        response = await axios.post("http://localhost:5000/api/matches/", matchDataToSave);
+        response = await axios.post(
+          `${window.__API_BASE_URL__}/api/matches/`,
+          matchDataToSave,
+        );
         successMessage = "Match created successfully!";
       }
 
@@ -157,7 +167,11 @@ const MatchTimeLine = () => {
       }
     } catch (error) {
       console.error("❌ Error saving match:", error);
-      Swal.fire({ icon: "error", title: "Error", text: "Something went wrong. Please try again!" });
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Something went wrong. Please try again!",
+      });
     } finally {
       setUploading(false);
     }
@@ -172,7 +186,9 @@ const MatchTimeLine = () => {
   return (
     <div>
       <Navbar />
-      <h2 className="mt-10 mb-8 text-3xl font-bold text-center">Matches Timeline</h2>
+      <h2 className="mt-10 mb-8 text-3xl font-bold text-center">
+        Matches Timeline
+      </h2>
 
       <div className="flex justify-end mx-20">
         <button
@@ -185,10 +201,10 @@ const MatchTimeLine = () => {
       </div>
 
       {/* Pass Matches to MatchDetails */}
-      <MatchDetails 
-        matches={matches} 
-        isLoading={isLoading} 
-        onUpdateMatch={handleEditMatch} 
+      <MatchDetails
+        matches={matches}
+        isLoading={isLoading}
+        onUpdateMatch={handleEditMatch}
         onDeleteMatch={handleDeleteMatch}
       />
 
